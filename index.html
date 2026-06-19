@@ -130,13 +130,22 @@
       </section>
 
       <section id="tasks" class="page">
-        <h2>Задания</h2>
         <div class="card">
-          <h3>Тренировка: проценты</h3>
-          <p>Цена товара была 800 ₽. Ее увеличили на 25%. Какой стала цена?</p>
-          <input id="answer" placeholder="Введите ответ" />
+
+          <h3 id="taskTitle">Загрузка задания...</h3>
+
+          <p id="taskMeta"></p>
+
+          <p id="taskQuestion"></p>
+
+          <input id="answer" placeholder="Введите ответ">
+
           <button class="btn" onclick="checkAnswer()">Проверить</button>
+
+          <button class="btn" onclick="nextTask()">Следующее задание</button>
+
           <p id="result"></p>
+
         </div>
       </section>
 
