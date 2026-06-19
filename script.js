@@ -1,6 +1,29 @@
 let tasks = [];
-
 let currentTask = 0;
+
+let filteredTasks = [];
+let currentSubject = "all";
+let currentTopic = "all";
+
+async function loadTasks() {
+  
+    try {
+        const response = await fetch("tasks.json");
+
+        tasks = await response.json();
+
+        filteredTasks = [...tasks];
+
+        populateFilters();
+
+        currentTask = Math.floor(Math.random() * tasks.length);
+
+        renderTask();
+
+    } catch (error) {
+        console.error(error);
+    }
+}
 
 function openApp() {
 
@@ -120,7 +143,7 @@ function renderTask() {
 
   }
 
-  const task = tasks[currentTask];
+  const task = filteredTasks[currentTask];
 
   const taskTitle = document.getElementById("taskTitle");
 
@@ -158,7 +181,7 @@ function checkAnswer() {
 
   }
 
-  const task = tasks[currentTask];
+  const task = filteredTasks[currentTask];
 
   const answerInput = document.getElementById("answer");
 
@@ -192,13 +215,13 @@ function checkAnswer() {
 
 function nextTask() {
 
-  if (!tasks || tasks.length === 0) {
+  if (!filteredTasks || filteredTasks.length === 0) {
 
     return;
 
   }
 
-  currentTask = Math.floor(Math.random() * tasks.length);
+  currentTask = Math.floor(Math.random() * filteredTasks.length);
 
   renderTask();
 
@@ -256,3 +279,54 @@ function sendChat() {
 setupNavigation();
 
 loadTasks();
+
+function populateFilters() {
+
+    const subjectFilter = document.getElementById("subjectFilter");
+    const topicFilter = document.getElementById("topicFilter");
+
+    if (!subjectFilter || !topicFilter) return;
+
+    const subjects = [...new Set(tasks.map(task => task.subject))];
+
+    subjects.forEach(subject => {
+
+        const option = document.createElement("option");
+
+        option.value = subject;
+
+        option.textContent = subject;
+
+        subjectFilter.appendChild(option);
+
+    });
+
+}
+
+function applyFilters() {
+
+    const subjectFilter = document.getElementById("subjectFilter");
+    const topicFilter = document.getElementById("topicFilter");
+
+    currentSubject = subjectFilter.value;
+    currentTopic = topicFilter.value;
+
+    filteredTasks = tasks.filter(task => {
+
+        const subjectMatch =
+            currentSubject === "all" ||
+            task.subject === currentSubject;
+
+        const topicMatch =
+            currentTopic === "all" ||
+            task.topic === currentTopic;
+
+        return subjectMatch && topicMatch;
+
+    });
+
+    currentTask = 0;
+
+    renderTask();
+
+}

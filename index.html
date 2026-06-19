@@ -130,8 +130,19 @@
       </section>
 
       <section id="tasks" class="page">
-        <div class="card">
+      <div class="card">
+        <h3>Фильтр заданий</h3>
 
+        <select id="subjectFilter" onchange="applyFilters()">
+        <option value="all">Все предметы</option>
+        </select>
+
+        <br><br>
+
+        <select id="topicFilter" onchange="applyFilters()">
+        <option value="all">Все темы</option>
+        </select>
+      </div>
           <h3 id="taskTitle">Загрузка задания...</h3>
 
           <p id="taskMeta"></p>
