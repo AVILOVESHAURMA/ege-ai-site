@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EGE AI — AI-репетитор для ЕГЭ</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <section id="landing" class="landing">
+    <header class="topbar">
+      <div class="brand"><div class="logo">✦</div><b>EGE AI</b></div>
+      <nav>
+        <a href="#about">О нас</a>
+        <a href="#how">Как это работает</a>
+        <a href="#tariffs">Тарифы</a>
+        <a href="#reviews">Отзывы</a>
+      </nav>
+      <button onclick="openApp()" class="btn small">Войти</button>
+    </header>
+
+    <main class="hero">
+      <div>
+        <h1>Твой AI-репетитор<br><span>для подготовки к ЕГЭ</span></h1>
+        <p>Персональный план, умные задания, подробные разборы и поддержка 24/7. Сдай ЕГЭ на высокий балл вместе с искусственным интеллектом.</p>
+        <div class="actions">
+          <button onclick="openApp()" class="btn">Начать бесплатно</button>
+          <button onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})" class="btn ghost">Как это работает</button>
+        </div>
+      </div>
+
+      <div class="hero-art">
+        <div class="robot">
+          <div class="hat"></div>
+          <div class="head"><div class="eyes"><i></i><i></i></div></div>
+          <div class="body">📘</div>
+        </div>
+        <div class="float-card plan"><b>План на сегодня</b><p>● Алгебра</p><p>● Геометрия</p><p>● Вероятность</p></div>
+        <div class="float-card progress"><b>Прогресс</b><div class="circle">72%</div></div>
+      </div>
+    </main>
+
+    <section class="features" id="about">
+      <div>☑ <span>Персональный план подготовки</span></div>
+      <div>♙ <span>Разбор ошибок и объяснения</span></div>
+      <div>⌁ <span>Отслеживание прогресса</span></div>
+      <div>♡ <span>Поддержка 24/7</span></div>
+    </section>
+
+    <section class="how" id="how">
+      <h2>Как это работает</h2>
+      <div class="how-grid">
+        <div><b>1. Диагностика</b><p>ИИ определяет твой уровень и слабые темы.</p></div>
+        <div><b>2. Личный план</b><p>Система собирает маршрут подготовки к нужному баллу.</p></div>
+        <div><b>3. Практика</b><p>Ты решаешь задания, а AI объясняет ошибки.</p></div>
+      </div>
+    </section>
+  </section>
+
+  <section id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand side"><div class="logo">✦</div><b>EGE AI</b></div>
+      <button class="nav active" data-page="home">⌂ Главная</button>
+      <button class="nav" data-page="subjects">▦ Предметы</button>
+      <button class="nav" data-page="plan">▣ План подготовки</button>
+      <button class="nav" data-page="tasks">☑ Задания</button>
+      <button class="nav" data-page="tests">◴ Пробники</button>
+      <button class="nav" data-page="stats">▥ Статистика</button>
+      <button class="nav" data-page="tutor">♙ AI-репетитор</button>
+    </aside>
+
+    <main class="main">
+      <div class="top"><button>☰</button><div class="avatar">👨‍🎓</div></div>
+
+      <section id="home" class="page active">
+        <h2>Главная</h2>
+        <div class="cards3">
+          <div class="card center">
+            <b>Твой прогресс</b>
+            <div class="big-circle">45%</div>
+            <p>Готовность к ЕГЭ</p>
+            <button class="btn">Продолжить обучение</button>
+          </div>
+          <div class="card">
+            <b>План на сегодня</b>
+            <ul>
+              <li><b>Алгебра</b><br><small>Решить 5 заданий</small></li>
+              <li><b>Геометрия</b><br><small>Изучить тему: треугольники</small></li>
+              <li><b>Пробник</b><br><small>Пройти мини-пробник</small></li>
+            </ul>
+          </div>
+          <div class="card">
+            <b>Статистика</b>
+            <p><strong>24</strong> изучено тем</p>
+            <p><strong>156</strong> решено заданий</p>
+            <p><strong>72</strong> средний балл</p>
+          </div>
+        </div>
+        <h3>Рекомендуемые задания</h3>
+        <div class="task-row"><b>🧠 Алгебра. Задание 12 — профиль</b><span>Средний</span><button class="btn small">Решить</button></div>
+      </section>
+
+      <section id="subjects" class="page">
+        <h2>Выбор предмета</h2>
+        <p class="muted">Выберите предмет для подготовки</p>
+        <div class="subjects">
+          <div class="subject"><div class="icon">√x</div><h3>Математика<br>профиль</h3><p>Подготовка ко всем темам профильного ЕГЭ</p><small>0%</small><div class="bar"></div></div>
+          <div class="subject"><div class="icon green">%</div><h3>Математика<br>база</h3><p>Подготовка ко всем темам базового ЕГЭ</p><small>0%</small><div class="bar"></div></div>
+          <div class="subject"><div class="icon red">А</div><h3>Русский язык</h3><p>Подготовка ко всем заданиям ЕГЭ по русскому языку</p><small>0%</small><div class="bar"></div></div>
+          <div class="subject"><div class="icon">☷</div><h3>Обществознание</h3><p>Теория, термины и тесты</p><small>0%</small><div class="bar"></div></div>
+          <div class="subject"><div class="icon blue">⚛</div><h3>Физика</h3><p>Формулы, теория и задачи</p><small>0%</small><div class="bar"></div></div>
+          <div class="subject"><div class="icon blue">&lt;/&gt;</div><h3>Информатика</h3><p>Программирование, логика и таблицы</p><small>0%</small><div class="bar"></div></div>
+        </div>
+      </section>
+
+      <section id="plan" class="page">
+        <h2>План подготовки</h2>
+        <div class="card">
+          <h3>План на 7 дней</h3>
+          <ol>
+            <li>Проценты и диагностика</li>
+            <li>Графики функций</li>
+            <li>Вероятность</li>
+            <li>Уравнения</li>
+            <li>Геометрия</li>
+            <li>Мини-пробник</li>
+            <li>Разбор ошибок</li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="tasks" class="page">
+        <h2>Задания</h2>
+        <div class="card">
+          <h3>Тренировка: проценты</h3>
+          <p>Цена товара была 800 ₽. Ее увеличили на 25%. Какой стала цена?</p>
+          <input id="answer" placeholder="Введите ответ" />
+          <button class="btn" onclick="checkAnswer()">Проверить</button>
+          <p id="result"></p>
+        </div>
+      </section>
+
+      <section id="tests" class="page">
+        <h2>Пробники</h2>
+        <div class="card"><h3>Мини-пробник №1</h3><p>10 заданий, примерное время — 25 минут.</p><button class="btn">Начать</button></div>
+      </section>
+
+      <section id="stats" class="page">
+        <h2>Статистика</h2>
+        <div class="stats">
+          <div class="card"><b>Готовность</b><h1>45%</h1><p>+5% за неделю</p></div>
+          <div class="card"><b>Средний балл</b><h1>72</h1><p>+6 баллов</p></div>
+          <div class="card"><b>Решено</b><h1>156</h1><p>+23 задания</p></div>
+          <div class="card"><b>Темы</b><h1>24</h1><p>из 54</p></div>
+        </div>
+      </section>
+
+      <section id="tutor" class="page">
+        <h2>AI-репетитор</h2>
+        <div class="chat-grid">
+          <div class="chat">
+            <div class="message user">Объясни, как решать задания на проценты?</div>
+            <div class="message bot-msg">Конечно! 100% — это целое. Чтобы найти 25% от 800, нужно 800 × 0,25 = 200. Новая цена: 800 + 200 = 1000 ₽.</div>
+            <div id="chatLog"></div>
+            <div class="chat-input"><input id="chatInput" placeholder="Задай вопрос..." /><button onclick="sendChat()" class="btn small">➤</button></div>
+          </div>
+          <div class="card"><b>Популярные темы</b><p>▣ Проценты</p><p>▣ Уравнения</p><p>▣ Функции</p><p>▣ Геометрия</p></div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
