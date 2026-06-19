@@ -55,7 +55,7 @@ function renderTask(){
   if(!taskTitle || !taskQuestion) return;
 
   taskTitle.textContent = task.title;
-  taskMeta.textContent = ${task.subject} • ${task.topic};
+  taskMeta.textContent = `${task.subject} • ${task.topic}`;
   taskQuestion.textContent = task.question;
   answer.value = "";
   result.textContent = "";
