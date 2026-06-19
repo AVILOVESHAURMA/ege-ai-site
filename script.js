@@ -6,23 +6,22 @@ let currentSubject = "all";
 let currentTopic = "all";
 
 async function loadTasks() {
-  
-    try {
-        const response = await fetch("tasks.json");
+  try {
+    const response = await fetch("tasks.json");
 
-        tasks = await response.json();
+    tasks = await response.json();
 
-        filteredTasks = [...tasks];
+    filteredTasks = [...tasks];
 
-        populateFilters();
+    populateFilters();
 
-        currentTask = Math.floor(Math.random() * tasks.length);
+    currentTask = Math.floor(Math.random() * filteredTasks.length);
 
-        renderTask();
+    renderTask();
 
-    } catch (error) {
-        console.error(error);
-    }
+  } catch (error) {
+    console.error(error);
+  }
 }
 
 function openApp() {
@@ -101,7 +100,11 @@ function loadTasks() {
 
       tasks = data;
 
-      currentTask = Math.floor(Math.random() * tasks.length);
+      filteredTasks = [...tasks];
+
+      populateFilters();
+
+      currentTask = Math.floor(Math.random() * filteredTasks.length);
 
       renderTask();
 
@@ -137,7 +140,7 @@ function loadTasks() {
 
 function renderTask() {
 
-  if (!tasks || tasks.length === 0) {
+  if (!filteredTasks || filteredTasks.length === 0) {
 
     return;
 
