@@ -87,7 +87,7 @@ function sendChat(){
 
   if(!text) return;
 
-  log.innerHTML += <div class="message user">${text}</div>;
+  log.innerHTML += `<div class="message bot-msg">${answer}</div>`;
 
  let answer = "Я пока демо-репетитор. Могу объяснить проценты, вероятности и план подготовки.";
 
