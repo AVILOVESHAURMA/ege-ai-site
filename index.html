@@ -89,7 +89,56 @@
       </div>
     </section>
     <section id="tests" class="page"><div class="card"><h3>Мини-пробник</h3><p>Скоро здесь будет режим экзамена с таймером.</p><button class="btn">Начать пробник</button></div></section>
-    <section id="stats" class="page"><div class="stats"><div class="card"><b>Готовность</b><h1>45%</h1><p>демо-метрика</p></div><div class="card"><b>Правильность</b><h1>—</h1><p>скоро подключим</p></div><div class="card"><b>Решено</b><h1>—</h1><p>локальная статистика</p></div><div class="card"><b>Ошибки</b><h1>—</h1><p>работа над ошибками</p></div></div></section>
+    <section id="stats" class="page">
+
+  <div class="stats">
+
+    <div class="card">
+      <b>Решено</b>
+      <h1 id="statSolved">0</h1>
+      <p>всего заданий</p>
+    </div>
+
+    <div class="card">
+      <b>Верно</b>
+      <h1 id="statCorrect">0</h1>
+      <p>правильных ответов</p>
+    </div>
+
+    <div class="card">
+      <b>Ошибки</b>
+      <h1 id="statWrong">0</h1>
+      <p>неверных ответов</p>
+    </div>
+
+    <div class="card">
+      <b>Точность</b>
+      <h1 id="statAccuracy">0%</h1>
+      <p>процент правильности</p>
+    </div>
+
+  </div>
+
+  <div class="card stat-wide">
+    <h3>Слабая тема</h3>
+    <p id="statWeakTopic">Пока мало данных</p>
+  </div>
+
+  <div class="card stat-wide">
+    <h3>Статистика по предметам</h3>
+
+    <div id="subjectStatsList">
+      <p class="muted">
+        Реши несколько заданий, и здесь появится статистика по предметам.
+      </p>
+    </div>
+  </div>
+
+  <button class="btn ghost" onclick="resetStats()">
+    Сбросить статистику
+  </button>
+
+</section>
     <section id="tutor" class="page"><div class="chat-grid"><div id="chatLog" class="card chat"><div class="message bot-msg">Привет! Я демо-репетитор. Спроси про проценты, вероятность или скорость.</div></div><div class="card chat-input-card"><input id="chatInput" placeholder="Задай вопрос..." /><button onclick="sendChat()" class="btn small">Отправить</button></div></div></section>
   </main>
 </section>
