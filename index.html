@@ -3,237 +3,393 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EGE AI — подготовка к ЕГЭ</title>
+  <title>EGE AI — AI-репетитор для ЕГЭ</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-<section id="landing" class="landing">
-  <header class="topbar">
-    <div class="brand"><div class="logo">✦</div><b>EGE AI</b></div>
-    <nav><a href="#about">О нас</a><a href="#how">Как это работает</a></nav>
-    <button onclick="openApp(); openPage('home')" class="btn small">Войти</button>
-  </header>
-
-  <main class="hero">
-    <div>
-      <p class="badge">AI-платформа подготовки</p>
-      <h1>Твой AI-репетитор<br><span>для подготовки к ЕГЭ</span></h1>
-      <p>Задания, темы, статистика и разбор ошибок в одном личном кабинете.</p>
-      <div class="actions">
-        <button onclick="openApp(); openPage('home')" class="btn">Начать бесплатно</button>
-        <button onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})" class="btn ghost">Как это работает</button>
+  <section id="landing" class="landing">
+    <header class="landing-header">
+      <div class="brand">
+        <div class="logo">✦</div>
+        <b>EGE AI</b>
       </div>
-    </div>
 
-    <div class="hero-card">
-      <div class="mini-card"><b>Прогноз балла</b><h2>72 → 84</h2><p>при стабильной практике</p></div>
-      <div class="mini-card"><b>Сегодня</b><p>5 задач по математике<br>3 задачи по русскому<br>1 мини-пробник</p></div>
-    </div>
-  </main>
+      <nav>
+        <a href="#about">О платформе</a>
+        <a href="#how">Как работает</a>
+        <a href="#preview">Возможности</a>
+      </nav>
 
-  <section id="about" class="features">
-    <div class="card"><b>🎯 Персональный план</b><p>Выбирай предметы, темы, номера ЕГЭ и сложность.</p></div>
-    <div class="card"><b>📚 База заданий</b><p>Задания хранятся в tasks.json и легко расширяются.</p></div>
-    <div class="card"><b>📈 Прогресс</b><p>Локальная статистика, слабые темы и история решений.</p></div>
-  </section>
+      <button onclick="openApp(); openPage('home')" class="btn small">Войти</button>
+    </header>
 
-  <section id="how" class="how">
-    <h2>Как это работает</h2>
-    <div class="how-grid">
-      <div class="card"><b>1. Выбор</b><p>Предмет → тема → номер ЕГЭ → сложность.</p></div>
-      <div class="card"><b>2. Практика</b><p>Решаешь задания и сразу проверяешь ответ.</p></div>
-      <div class="card"><b>3. Рост</b><p>Система покажет слабые темы и план подготовки.</p></div>
-    </div>
-  </section>
-</section>
+    <main class="landing-hero">
+      <div class="landing-copy">
+        <p class="badge">AI-платформа подготовки к экзаменам</p>
+        <h1>Твой AI-репетитор<br><span>для подготовки к ЕГЭ</span></h1>
+        <p class="hero-description">
+          Персональный план, умные задания, статистика, работа над ошибками и поддержка 24/7.
+        </p>
 
-<section id="app" class="app hidden">
-  <aside class="sidebar">
-    <div class="brand side"><div class="logo">✦</div><b>EGE AI</b></div>
-    <button class="nav active" data-page="home">Главная</button>
-    <button class="nav" data-page="subjects">Предметы</button>
-    <button class="nav" data-page="plan">План подготовки</button>
-    <button class="nav" data-page="tasks">Задания</button>
-    <button class="nav" data-page="tests">Пробники</button>
-    <button class="nav" data-page="stats">Статистика</button>
-    <button class="nav" data-page="tutor">AI-репетитор</button>
-  </aside>
-
-  <main class="main">
-    <div class="top">
-      <div>
-        <p class="muted">Личный кабинет</p>
-        <h2 id="pageTitle">Главная</h2>
+        <div class="actions">
+          <button onclick="openApp(); openPage('home')" class="btn">Начать бесплатно</button>
+          <button onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})" class="btn ghost">Как это работает</button>
+        </div>
       </div>
-      <div class="top-actions">
-        <button onclick="openPage('home')" class="btn ghost small">Главная</button>
-        <div class="avatar">🏆</div>
-      </div>
-    </div>
 
-    <section id="home" class="page active">
-      <div class="dash-layout">
-
-        <div class="card dash-main">
+      <div class="landing-preview">
+        <div class="preview-top">
           <div>
-            <p class="badge">Твой прогресс сегодня</p>
-            <h1>Готовность к ЕГЭ: 45%</h1>
-            <p class="muted">Сайт уже запоминает решённые задания, считает статистику и помогает тренировать слабые темы.</p>
-
-            <div class="actions">
-              <button class="btn" onclick="openPage('tasks')">Продолжить обучение</button>
-              <button class="btn ghost" onclick="openPage('stats')">Статистика</button>
-            </div>
+            <p class="muted">Прогноз балла</p>
+            <h2>72 → 84</h2>
           </div>
-
-          <div class="big-circle">45%</div>
+          <div class="mini-circle">58%</div>
         </div>
 
-        <div class="card dash-exam">
-          <p class="muted">До ЕГЭ осталось</p>
-          <h1>341</h1>
-          <p>день до экзамена</p>
-          <div class="dash-mini-line"></div>
-          <b>Цель: 80+ баллов</b>
+        <div class="preview-card">
+          <b>Сегодня</b>
+          <p>5 заданий по математике</p>
+          <p>3 задания по русскому</p>
+          <p>1 мини-пробник</p>
         </div>
 
-        <div class="card dash-score">
-          <b>📈 Прогноз балла</b>
-          <h1>72 → 84</h1>
-          <p>при регулярной практике</p>
+        <div class="preview-card accent">
+          <b>AI-рекомендация</b>
+          <p>Повтори вероятность и проценты — там чаще всего ошибки.</p>
+        </div>
+      </div>
+    </main>
+
+    <section id="about" class="landing-grid">
+      <div class="glass-card">
+        <b>🎯 Персональный план</b>
+        <p>Платформа подстраивается под предметы, слабые темы и историю решений.</p>
+      </div>
+      <div class="glass-card">
+        <b>📚 Банк заданий</b>
+        <p>Задания хранятся в базе и фильтруются по предметам, темам и сложности.</p>
+      </div>
+      <div class="glass-card">
+        <b>📈 Прогресс</b>
+        <p>Статистика показывает точность, ошибки и динамику подготовки.</p>
+      </div>
+    </section>
+
+    <section id="how" class="landing-section">
+      <h2>Как это работает</h2>
+      <div class="landing-grid">
+        <div class="glass-card">
+          <span class="step">1</span>
+          <b>Выбор направления</b>
+          <p>Ученик выбирает предметы и темы для подготовки.</p>
+        </div>
+        <div class="glass-card">
+          <span class="step">2</span>
+          <b>Тренировка</b>
+          <p>Решает задания, получает проверку и объяснение.</p>
+        </div>
+        <div class="glass-card">
+          <span class="step">3</span>
+          <b>Рост результата</b>
+          <p>Система выделяет слабые темы и предлагает следующий шаг.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="preview" class="landing-section">
+      <h2>Что внутри</h2>
+      <div class="landing-grid">
+        <div class="glass-card"><b>Личный кабинет</b><p>Главная с прогрессом и планом.</p></div>
+        <div class="glass-card"><b>Тренажёр</b><p>Задания с фильтрами и проверкой.</p></div>
+        <div class="glass-card"><b>AI-чат</b><p>Помощник для объяснений и подсказок.</p></div>
+      </div>
+    </section>
+  </section>
+
+  <section id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand side">
+        <div class="logo">✦</div>
+        <b>EGE AI</b>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav active" data-page="home">⌂ Главная</button>
+        <button class="nav" data-page="subjects">▣ Предметы</button>
+        <button class="nav" data-page="plan">☑ План подготовки</button>
+        <button class="nav" data-page="tasks">✎ Задания</button>
+        <button class="nav" data-page="tests">◉ Пробники</button>
+        <button class="nav" data-page="stats">◍ Статистика</button>
+        <button class="nav" data-page="tutor">✦ AI-репетитор</button>
+      </div>
+
+      <div class="sidebar-footer">
+        <p class="muted">Локальный прогресс</p>
+        <b>Сохраняется в браузере</b>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="top">
+        <div>
+          <p class="muted">Личный кабинет</p>
+          <h2 id="pageTitle">Главная</h2>
         </div>
 
-        <div class="card dash-today">
-          <b>🔥 План на сегодня</b>
-          <ul>
-            <li>Решить 10 заданий</li>
-            <li>Повторить слабую тему</li>
-            <li>Проверить статистику</li>
-          </ul>
+        <div class="top-actions">
+          <button onclick="openPage('home')" class="btn ghost small">Главная</button>
+          <div class="avatar">🏆</div>
         </div>
+      </div>
 
-        <div class="card dash-weak">
-          <b>🎯 Слабые темы</b>
-          <div class="weak-list">
-            <span>Вероятность</span>
-            <span>Экономические задачи</span>
-            <span>Параметры</span>
-          </div>
-          <button class="btn small ghost" onclick="openPage('tasks')">Тренировать</button>
-        </div>
-
-        <div class="card dash-subjects">
-          <div class="section-title">
-            <b>📚 Мои предметы</b>
-            <button class="btn small ghost" onclick="openPage('subjects')">Выбрать</button>
-          </div>
-
-          <div class="subject-progress-row">
+      <section id="home" class="page active">
+        <div class="dashboard">
+          <div class="panel hero-panel">
             <div>
-              <b>Математика профиль</b>
-              <p>65%</p>
+              <p class="badge">Твой прогресс сегодня</p>
+              <h1>Готовность к ЕГЭ: 45%</h1>
+              <p class="muted">
+                Сайт запоминает решённые задания, считает статистику и помогает тренировать слабые темы.
+              </p>
+              <div class="actions">
+                <button class="btn" onclick="openPage('tasks')">Продолжить обучение</button>
+                <button class="btn ghost" onclick="openPage('stats')">Статистика</button>
+              </div>
             </div>
-            <div class="mini-progress"><span style="width:65%"></span></div>
+            <div class="progress-ring">45%</div>
           </div>
 
-          <div class="subject-progress-row">
+          <div class="panel compact-panel">
+            <p class="muted">До ЕГЭ осталось</p>
+            <h1>341</h1>
+            <p>день до экзамена</p>
+          </div>
+
+          <div class="panel compact-panel">
+            <p class="muted">Цель</p>
+            <h1>80+</h1>
+            <p>баллов на ЕГЭ</p>
+          </div>
+
+          <div class="panel score-panel">
+            <b>📈 Прогноз балла</b>
+            <h1>72 → 84</h1>
+            <p>при регулярной практике</p>
+          </div>
+
+          <div class="panel today-panel">
+            <b>🔥 План на сегодня</b>
+            <ul class="clean-list">
+              <li>Решить 10 заданий</li>
+              <li>Повторить слабую тему</li>
+              <li>Проверить статистику</li>
+            </ul>
+          </div>
+
+          <div class="panel weak-panel">
+            <b>🎯 Слабые темы</b>
+            <div class="pill-list">
+              <span>Вероятность</span>
+              <span>Экономические задачи</span>
+              <span>Параметры</span>
+            </div>
+            <button class="btn small ghost" onclick="openPage('tasks')">Тренировать</button>
+          </div>
+
+          <div class="panel subject-panel">
+            <div class="section-title">
+              <b>📚 Мои предметы</b>
+              <button class="btn small ghost" onclick="openPage('subjects')">Выбрать</button>
+            </div>
+
+            <div class="subject-progress-row">
+              <div><b>Математика профиль</b><p>65%</p></div>
+              <div class="mini-progress"><span style="width:65%"></span></div>
+            </div>
+
+            <div class="subject-progress-row">
+              <div><b>Русский язык</b><p>58%</p></div>
+              <div class="mini-progress"><span style="width:58%"></span></div>
+            </div>
+
+            <div class="subject-progress-row">
+              <div><b>Обществознание</b><p>72%</p></div>
+              <div class="mini-progress"><span style="width:72%"></span></div>
+            </div>
+          </div>
+
+          <div class="panel ai-panel">
+            <b>🤖 AI-рекомендация</b>
+            <p>
+              Сегодня лучше добить проценты и вероятность. Эти темы сильнее всего влияют на стабильность результата.
+            </p>
+            <button class="btn small" onclick="openPage('tasks')">Начать тренировку</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="subjects" class="page">
+        <div class="page-head">
+          <div>
+            <h3>Выбери предметы для подготовки</h3>
+            <p class="muted">Карточки ниже показывают предметы из базы заданий.</p>
+          </div>
+          <button class="btn small" onclick="openPage('tasks')">К заданиям</button>
+        </div>
+        <div class="subject-grid" id="subjectCards"></div>
+      </section>
+
+      <section id="plan" class="page">
+        <div class="training-grid">
+          <div class="panel plan-main">
+            <p class="badge">План подготовки</p>
+            <h3>Твой маршрут на неделю</h3>
+            <div class="timeline">
+              <div><span>1</span><b>Диагностика</b><p>Выбери предмет и реши стартовые задания.</p></div>
+              <div><span>2</span><b>Слабые темы</b><p>Система покажет темы, где чаще ошибки.</p></div>
+              <div><span>3</span><b>Тренировка</b><p>Решай задания без повторов.</p></div>
+              <div><span>4</span><b>Проверка</b><p>Закрепляй прогресс мини-пробником.</p></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <b>Сегодня</b>
+            <ul class="clean-list">
+              <li>10 задач по математике</li>
+              <li>5 задач по русскому</li>
+              <li>1 разбор ошибок</li>
+            </ul>
+          </div>
+
+          <div class="panel">
+            <b>Режим</b>
+            <p class="muted">Сейчас работает локальная версия. Позже план будет строиться по аккаунту.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="tasks" class="page">
+        <div class="task-layout">
+          <div class="panel filter-card">
+            <div class="section-title">
+              <div>
+                <p class="badge">Тренировка</p>
+                <h3>Выбор задания</h3>
+              </div>
+              <p id="taskCount" class="muted">Загрузка базы...</p>
+            </div>
+
+            <div class="filter-row">
+              <select id="subjectFilter" onchange="applyFilters()"><option value="all">Все предметы</option></select>
+              <select id="topicFilter" onchange="applyFilters()"><option value="all">Все темы</option></select>
+              <select id="egeFilter" onchange="applyFilters()"><option value="all">Все номера ЕГЭ</option></select>
+              <select id="difficultyFilter" onchange="applyFilters()"><option value="all">Любая сложность</option></select>
+            </div>
+          </div>
+
+          <div class="panel task-card">
+            <div class="task-badges">
+              <span id="taskMeta">Загрузка...</span>
+              <span id="taskDifficulty"></span>
+            </div>
+
+            <h3 id="taskTitle">Загрузка задания...</h3>
+            <p id="taskQuestion"></p>
+
+            <div class="answer-row">
+              <input id="answer" placeholder="Введите ответ" />
+              <button class="btn" onclick="checkAnswer()">Проверить</button>
+              <button class="btn ghost" onclick="nextTask()">Следующее задание</button>
+            </div>
+
+            <p id="result"></p>
+          </div>
+
+          <div class="panel task-side">
+            <b>Подсказка</b>
+            <p class="muted">Правильно решённые задания больше не выпадают. Ошибки учитываются в статистике.</p>
+            <button class="btn small ghost" onclick="openPage('stats')">Открыть статистику</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tests" class="page">
+        <div class="tests-grid">
+          <div class="panel test-hero">
+            <p class="badge">Экзаменационный режим</p>
+            <h3>Мини-пробник</h3>
+            <p class="muted">Скоро здесь будет режим экзамена с таймером и итоговым результатом.</p>
+            <button class="btn">Начать пробник</button>
+          </div>
+
+          <div class="panel">
+            <b>Что будет внутри</b>
+            <ul class="clean-list">
+              <li>таймер</li>
+              <li>серия заданий</li>
+              <li>итоговый балл</li>
+              <li>разбор ошибок</li>
+            </ul>
+          </div>
+
+          <div class="panel">
+            <b>Статус</b>
+            <p class="muted">Пробники пока в демо-режиме. Основной тренажёр уже работает.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="stats" class="page">
+        <div class="stats">
+          <div class="panel stat-card"><b>Решено</b><h1 id="statSolved">0</h1><p>всего заданий</p></div>
+          <div class="panel stat-card"><b>Верно</b><h1 id="statCorrect">0</h1><p>правильных ответов</p></div>
+          <div class="panel stat-card"><b>Ошибки</b><h1 id="statWrong">0</h1><p>неверных ответов</p></div>
+          <div class="panel stat-card"><b>Точность</b><h1 id="statAccuracy">0%</h1><p>процент правильности</p></div>
+        </div>
+
+        <div class="stats-layout">
+          <div class="panel">
+            <h3>Слабая тема</h3>
+            <p id="statWeakTopic" class="big-muted">Пока мало данных</p>
+          </div>
+
+          <div class="panel">
+            <h3>Статистика по предметам</h3>
+            <div id="subjectStatsList">
+              <p class="muted">Реши несколько заданий, и здесь появится статистика по предметам.</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn ghost" onclick="resetStats()">Сбросить статистику</button>
+      </section>
+
+      <section id="tutor" class="page">
+        <div class="chat-shell">
+          <div class="panel chat-header">
             <div>
-              <b>Русский язык</b>
-              <p>58%</p>
+              <p class="badge">AI-репетитор</p>
+              <h3>Задай вопрос по теме</h3>
             </div>
-            <div class="mini-progress"><span style="width:58%"></span></div>
+            <p class="muted">Демо-режим</p>
           </div>
 
-          <div class="subject-progress-row">
-            <div>
-              <b>Обществознание</b>
-              <p>72%</p>
+          <div id="chatLog" class="panel chat">
+            <div class="message bot-msg">
+              Привет! Я демо-репетитор. Спроси про проценты, вероятность или скорость.
             </div>
-            <div class="mini-progress"><span style="width:72%"></span></div>
+          </div>
+
+          <div class="panel chat-input-card">
+            <input id="chatInput" placeholder="Задай вопрос..." />
+            <button onclick="sendChat()" class="btn small">Отправить</button>
           </div>
         </div>
+      </section>
+    </main>
+  </section>
 
-        <div class="card dash-ai">
-          <b>🤖 AI-рекомендация</b>
-          <p>Сегодня лучше добить проценты и вероятность. Эти темы сильнее всего влияют на стабильность результата.</p>
-          <button class="btn small" onclick="openPage('tasks')">Начать тренировку</button>
-        </div>
-
-      </div>
-    </section>
-
-    <section id="subjects" class="page"><div class="subject-grid" id="subjectCards"></div></section>
-
-    <section id="plan" class="page">
-      <div class="card">
-        <h3>План подготовки</h3>
-        <ol>
-          <li>Выбери предмет и слабую тему.</li>
-          <li>Реши 10 заданий подряд.</li>
-          <li>Разбери ошибки.</li>
-          <li>Повтори тему через 24 часа.</li>
-        </ol>
-      </div>
-    </section>
-
-    <section id="tasks" class="page">
-      <div class="card filter-card">
-        <h3>Выбор тренировки</h3>
-        <div class="filter-row">
-          <select id="subjectFilter" onchange="applyFilters()"><option value="all">Все предметы</option></select>
-          <select id="topicFilter" onchange="applyFilters()"><option value="all">Все темы</option></select>
-          <select id="egeFilter" onchange="applyFilters()"><option value="all">Все номера ЕГЭ</option></select>
-          <select id="difficultyFilter" onchange="applyFilters()"><option value="all">Любая сложность</option></select>
-        </div>
-        <p id="taskCount" class="muted">Загрузка базы...</p>
-      </div>
-
-      <div class="card task-card">
-        <div class="task-badges"><span id="taskMeta">Загрузка...</span><span id="taskDifficulty"></span></div>
-        <h3 id="taskTitle">Загрузка задания...</h3>
-        <p id="taskQuestion"></p>
-        <div class="answer-row">
-          <input id="answer" placeholder="Введите ответ" />
-          <button class="btn" onclick="checkAnswer()">Проверить</button>
-          <button class="btn ghost" onclick="nextTask()">Следующее задание</button>
-        </div>
-        <p id="result"></p>
-      </div>
-    </section>
-
-    <section id="tests" class="page">
-      <div class="card"><h3>Мини-пробник</h3><p>Скоро здесь будет режим экзамена с таймером.</p><button class="btn">Начать пробник</button></div>
-    </section>
-
-    <section id="stats" class="page">
-      <div class="stats">
-        <div class="card"><b>Решено</b><h1 id="statSolved">0</h1><p>всего заданий</p></div>
-        <div class="card"><b>Верно</b><h1 id="statCorrect">0</h1><p>правильных ответов</p></div>
-        <div class="card"><b>Ошибки</b><h1 id="statWrong">0</h1><p>неверных ответов</p></div>
-        <div class="card"><b>Точность</b><h1 id="statAccuracy">0%</h1><p>процент правильности</p></div>
-      </div>
-
-      <div class="card stat-wide"><h3>Слабая тема</h3><p id="statWeakTopic">Пока мало данных</p></div>
-
-      <div class="card stat-wide">
-        <h3>Статистика по предметам</h3>
-        <div id="subjectStatsList">
-          <p class="muted">Реши несколько заданий, и здесь появится статистика по предметам.</p>
-        </div>
-      </div>
-
-      <button class="btn ghost" onclick="resetStats()">Сбросить статистику</button>
-    </section>
-
-    <section id="tutor" class="page">
-      <div class="chat-grid">
-        <div id="chatLog" class="card chat"><div class="message bot-msg">Привет! Я демо-репетитор. Спроси про проценты, вероятность или скорость.</div></div>
-        <div class="card chat-input-card"><input id="chatInput" placeholder="Задай вопрос..." /><button onclick="sendChat()" class="btn small">Отправить</button></div>
-      </div>
-    </section>
-  </main>
-</section>
-
-<script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
