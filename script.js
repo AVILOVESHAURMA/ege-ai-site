@@ -720,3 +720,266 @@ loadTasks();
 
   setInterval(updateLiveDashboard, 2500);
 })();
+
+/* ===== mistakes / work on errors patch ===== */
+/* Вставь в самый низ script.js. Добавляет раздел "Ошибки" без замены старого кода. */
+
+(function () {
+  let wrongTaskIds = JSON.parse(localStorage.getItem("wrongTaskIds") || "[]");
+
+  function saveWrongTasks() {
+    localStorage.setItem("wrongTaskIds", JSON.stringify(wrongTaskIds));
+  }
+
+  function addWrongTask(task) {
+    if (!task || !task.id) return;
+
+    if (!wrongTaskIds.includes(task.id)) {
+      wrongTaskIds.push(task.id);
+      saveWrongTasks();
+    }
+  }
+
+  function removeWrongTask(taskId) {
+    wrongTaskIds = wrongTaskIds.filter(function (id) {
+      return id !== taskId;
+    });
+
+    saveWrongTasks();
+    renderMistakesPage();
+  }
+
+  function getWrongTasks() {
+    if (!Array.isArray(tasks)) return [];
+
+    return wrongTaskIds
+      .map(function (id) {
+        return tasks.find(function (task) {
+          return task.id === id;
+        });
+      })
+      .filter(Boolean);
+  }
+
+  function ensureMistakesNav() {
+    const navGroup = document.querySelector(".nav-group") || document.querySelector(".sidebar");
+
+    if (!navGroup) return;
+
+    if (document.querySelector('[data-page="mistakes"]')) return;
+
+    const btn = document.createElement("button");
+    btn.className = "nav";
+    btn.dataset.page = "mistakes";
+    btn.textContent = "✕ Ошибки";
+
+    const tutorBtn = document.querySelector('[data-page="tutor"]');
+
+    if (tutorBtn && tutorBtn.parentNode) {
+      tutorBtn.parentNode.insertBefore(btn, tutorBtn);
+    } else {
+      navGroup.appendChild(btn);
+    }
+
+    btn.addEventListener("click", function () {
+      openPage("mistakes");
+    });
+  }
+
+  function ensureMistakesPage() {
+    const main = document.querySelector(".main");
+
+    if (!main) return;
+
+    if (document.getElementById("mistakes")) return;
+
+    const section = document.createElement("section");
+    section.id = "mistakes";
+    section.className = "page";
+
+    section.innerHTML = `
+      <div class="page-head">
+        <div>
+          <h3>Работа над ошибками</h3>
+          <p class="muted">Здесь сохраняются задания, где был неправильный ответ.</p>
+        </div>
+
+        <button class="btn small" onclick="openPage('tasks')">К заданиям</button>
+      </div>
+
+      <div class="mistakes-layout">
+        <div class="panel mistakes-main">
+          <div class="section-title">
+            <div>
+              <p class="badge">Ошибки</p>
+              <h3>Повтори слабые места</h3>
+            </div>
+            <p id="mistakesCount" class="muted">0 ошибок</p>
+          </div>
+
+          <div id="mistakesList" class="mistakes-list"></div>
+        </div>
+
+        <div class="panel mistakes-side">
+          <b>Как работать</b>
+          <ul class="clean-list">
+            <li>Сначала посмотри тему ошибки</li>
+            <li>Нажми “Тренировать тему”</li>
+            <li>Реши похожие задания</li>
+            <li>Верные ответы убирают задачу из ошибок</li>
+          </ul>
+        </div>
+      </div>
+    `;
+
+    main.appendChild(section);
+  }
+
+  function renderMistakesPage() {
+    const list = document.getElementById("mistakesList");
+    const count = document.getElementById("mistakesCount");
+
+    if (!list) return;
+
+    const wrongTasks = getWrongTasks();
+
+    if (count) {
+      count.textContent = wrongTasks.length + " ошибок";
+    }
+
+    list.innerHTML = "";
+
+    if (!wrongTasks.length) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <h3>Ошибок пока нет</h3>
+          <p class="muted">Реши несколько заданий. Если ответ будет неверным, задание появится здесь.</p>
+          <button class="btn small" onclick="openPage('tasks')">Начать тренировку</button>
+        </div>
+      `;
+      return;
+    }
+
+    wrongTasks.forEach(function (task) {
+      const card = document.createElement("div");
+      card.className = "mistake-card";
+
+      card.innerHTML = `
+        <div>
+          <div class="task-badges">
+            <span>${task.subject || ""}</span>
+            <span>${task.topic || ""}</span>
+            <span>${task.egeNumber || ""}</span>
+          </div>
+
+          <h3>${task.title || "Задание"}</h3>
+          <p>${task.question || ""}</p>
+          <p class="muted"><b>Разбор:</b> ${task.explanation || "Разбор появится позже."}</p>
+        </div>
+
+        <div class="mistake-actions">
+          <button class="btn small" data-train="${task.id}">Тренировать тему</button>
+          <button class="btn small ghost" data-remove="${task.id}">Убрать</button>
+        </div>
+      `;
+
+      list.appendChild(card);
+    });
+
+    list.querySelectorAll("[data-remove]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        removeWrongTask(btn.dataset.remove);
+      });
+    });
+
+    list.querySelectorAll("[data-train]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const task = tasks.find(function (item) {
+          return item.id === btn.dataset.train;
+        });
+
+        if (!task) return;
+
+        openPage("tasks");
+
+        const subjectFilter = document.getElementById("subjectFilter");
+        const topicFilter = document.getElementById("topicFilter");
+        const egeFilter = document.getElementById("egeFilter");
+        const difficultyFilter = document.getElementById("difficultyFilter");
+
+        if (subjectFilter) {
+          subjectFilter.value = task.subject;
+          applyFilters();
+        }
+
+        setTimeout(function () {
+          if (topicFilter) topicFilter.value = task.topic;
+          if (egeFilter) egeFilter.value = "all";
+          if (difficultyFilter) difficultyFilter.value = "all";
+          applyFilters();
+        }, 50);
+      });
+    });
+  }
+
+  function initMistakesFeature() {
+    ensureMistakesNav();
+    ensureMistakesPage();
+    renderMistakesPage();
+  }
+
+  const oldOpenPage = window.openPage;
+  if (typeof oldOpenPage === "function") {
+    window.openPage = function (pageId) {
+      oldOpenPage(pageId);
+
+      if (pageId === "mistakes") {
+        const title = document.getElementById("pageTitle");
+        if (title) title.textContent = "Ошибки";
+        renderMistakesPage();
+      }
+    };
+  }
+
+  const oldCheckAnswer = window.checkAnswer;
+  if (typeof oldCheckAnswer === "function") {
+    window.checkAnswer = function () {
+      const task = filteredTasks && filteredTasks.length ? filteredTasks[currentTask] : null;
+      const answerInput = document.getElementById("answer");
+
+      let isWrong = false;
+
+      if (task && answerInput) {
+        const value = answerInput.value.trim().toLowerCase().replace(",", ".");
+        const correct = String(task.answer).trim().toLowerCase().replace(",", ".");
+
+        isWrong = value !== correct;
+      }
+
+      oldCheckAnswer();
+
+      if (task) {
+        if (isWrong) {
+          addWrongTask(task);
+        } else {
+          removeWrongTask(task.id);
+        }
+      }
+
+      renderMistakesPage();
+    };
+  }
+
+  const oldResetStats = window.resetStats;
+  if (typeof oldResetStats === "function") {
+    window.resetStats = function () {
+      wrongTaskIds = [];
+      saveWrongTasks();
+      oldResetStats();
+      renderMistakesPage();
+    };
+  }
+
+  setTimeout(initMistakesFeature, 300);
+  setTimeout(initMistakesFeature, 1000);
+})();

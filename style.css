@@ -783,3 +783,71 @@ input {
     transform: translateY(-3px) !important;
   }
 }
+
+/* ===== mistakes page styles ===== */
+
+.mistakes-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+
+.mistakes-list {
+  display: grid;
+  gap: 16px;
+}
+
+.mistake-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  padding: 20px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.075);
+}
+
+.mistake-card h3 {
+  margin: 14px 0 10px;
+  line-height: 1.15;
+}
+
+.mistake-card p {
+  line-height: 1.55;
+}
+
+.mistake-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.empty-state {
+  padding: 28px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.07);
+}
+
+.empty-state .btn {
+  margin-top: 22px;
+}
+
+@media(max-width: 1000px) {
+  .mistakes-layout,
+  .mistake-card {
+    grid-template-columns: 1fr;
+  }
+
+  .mistake-actions {
+    align-items: stretch;
+  }
+
+  .mistake-actions .btn {
+    width: 100%;
+  }
+}
