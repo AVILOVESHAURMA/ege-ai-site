@@ -12,6 +12,21 @@ let stats = JSON.parse(
   '{"solved":0,"correct":0,"wrong":0,"bySubject":{},"byTopic":{}}'
 );
 
+const SUBJECT_META = {
+  "Математика профиль": "📐",
+  "Математика база": "📘",
+  "Русский язык": "🇷🇺",
+  "Обществознание": "⚖️",
+  "Физика": "⚡",
+  "Информатика": "💻",
+  "Английский язык": "🇬🇧",
+  "История": "🏛️",
+  "География": "🌍",
+  "Биология": "🧬",
+  "Химия": "⚗️",
+  "Литература": "📖"
+};
+
 function saveStats() {
   localStorage.setItem("egeAiStats", JSON.stringify(stats));
 }
@@ -23,6 +38,7 @@ function saveSolvedTasks() {
 function resetStats() {
   stats = { solved: 0, correct: 0, wrong: 0, bySubject: {}, byTopic: {} };
   solvedTasks = [];
+
   saveStats();
   saveSolvedTasks();
   applyFilters();
@@ -147,10 +163,7 @@ function openApp() {
 function openPage(pageId) {
   document.querySelectorAll(".nav").forEach(function (item) {
     item.classList.remove("active");
-
-    if (item.dataset.page === pageId) {
-      item.classList.add("active");
-    }
+    if (item.dataset.page === pageId) item.classList.add("active");
   });
 
   document.querySelectorAll(".page").forEach(function (page) {
@@ -158,10 +171,7 @@ function openPage(pageId) {
   });
 
   const target = document.getElementById(pageId);
-
-  if (target) {
-    target.classList.add("active");
-  }
+  if (target) target.classList.add("active");
 
   const title = document.getElementById("pageTitle");
 
@@ -180,7 +190,6 @@ function openPage(pageId) {
   }
 
   if (pageId === "subjects") renderSubjectCards();
-
   updateStatsUI();
 }
 
@@ -200,7 +209,6 @@ function uniqueValues(field, source) {
 
 function fillSelect(id, values, firstText) {
   const select = document.getElementById(id);
-
   if (!select) return;
 
   select.innerHTML = "";
@@ -280,7 +288,6 @@ function applyFilters() {
 async function loadTasks() {
   try {
     const response = await fetch("tasks.json");
-
     tasks = await response.json();
 
     filteredTasks = tasks.filter(function (task) {
@@ -303,12 +310,12 @@ async function loadTasks() {
     filteredTasks = [];
 
     renderTask();
+    renderSubjectCards();
   }
 }
 
 function updateTaskCount() {
   const el = document.getElementById("taskCount");
-
   if (!el) return;
 
   el.textContent =
@@ -324,9 +331,7 @@ function renderTask() {
   const answerInput = document.getElementById("answer");
   const result = document.getElementById("result");
 
-  if (!taskTitle || !taskMeta || !taskQuestion || !answerInput || !result) {
-    return;
-  }
+  if (!taskTitle || !taskMeta || !taskQuestion || !answerInput || !result) return;
 
   if (!filteredTasks || filteredTasks.length === 0) {
     taskTitle.textContent = "Заданий не найдено";
@@ -335,7 +340,6 @@ function renderTask() {
     taskQuestion.textContent = "Выбери другие фильтры или сбрось статистику.";
     answerInput.value = "";
     result.textContent = "";
-
     updateTaskCount();
     return;
   }
@@ -345,9 +349,7 @@ function renderTask() {
   taskTitle.textContent = task.title || "Задание";
   taskMeta.textContent = (task.subject || "") + " · " + (task.topic || "") + " · " + (task.egeNumber || "");
 
-  if (taskDifficulty) {
-    taskDifficulty.textContent = task.difficulty || "";
-  }
+  if (taskDifficulty) taskDifficulty.textContent = task.difficulty || "";
 
   taskQuestion.textContent = task.question || "";
   answerInput.value = "";
@@ -371,13 +373,11 @@ function checkAnswer() {
   if (value === correct) {
     result.style.color = "#00d26a";
     result.textContent = "Верно! " + task.explanation;
-
     registerAnswer(true, task);
     markTaskAsSolved(task);
   } else {
     result.style.color = "#ff5a5a";
     result.textContent = "Пока неверно. " + task.explanation;
-
     registerAnswer(false, task);
   }
 
@@ -410,27 +410,17 @@ function nextTask() {
 
 function renderSubjectCards() {
   const container = document.getElementById("subjectCards");
-
   if (!container) return;
 
   container.innerHTML = "";
 
   if (!tasks || tasks.length === 0) {
-    container.innerHTML = "<div class='panel'><b>Загрузка базы...</b><p class='muted'>Если карточки не появились, обнови страницу.</p></div>";
+    container.innerHTML =
+      "<div class='panel subject-card empty-subject-card'><b>База заданий загружается...</b><p class='muted'>Если карточки не появились, проверь tasks.json.</p></div>";
     return;
   }
 
   const subjects = uniqueValues("subject", tasks);
-
-  const icons = {
-    "Математика профиль": "📐",
-    "Математика база": "📘",
-    "Русский язык": "🇷🇺",
-    "Обществознание": "⚖️",
-    "Физика": "⚡",
-    "Информатика": "💻",
-    "Английский язык": "🇬🇧"
-  };
 
   subjects.forEach(function (subject) {
     const allCount = tasks.filter(function (task) {
@@ -447,7 +437,8 @@ function renderSubjectCards() {
     div.className = "panel subject-card";
 
     div.innerHTML =
-      '<div class="icon">' + (icons[subject] || "📚") + "</div>" +
+      '<div class="subject-glow"></div>' +
+      '<div class="icon">' + (SUBJECT_META[subject] || "📚") + "</div>" +
       "<h3>" + subject + "</h3>" +
       "<p>" + solvedCount + " / " + allCount + " решено</p>" +
       '<div class="bar"><span style="width:' + percent + '%"></span></div>';
@@ -474,13 +465,11 @@ function sendChat() {
   if (!input || !log) return;
 
   const text = input.value.trim();
-
   if (!text) return;
 
   log.innerHTML += '<div class="message user">' + text + "</div>";
 
   let answer = "Я пока демо-репетитор. Могу объяснить проценты, вероятность, скорость и план подготовки.";
-
   const lower = text.toLowerCase();
 
   if (lower.includes("процент")) {
