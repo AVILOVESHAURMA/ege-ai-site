@@ -491,3 +491,232 @@ function sendChat() {
 setupNavigation();
 updateStatsUI();
 loadTasks();
+
+/* ===== safe live dashboard patch ===== */
+/* Вставь этот код в самый низ script.js. Он ничего не перезаписывает и не ломает кнопку входа. */
+
+(function () {
+  const EXAM_DATE = new Date("2027-05-27T00:00:00");
+
+  function safeAccuracy(correct, solved) {
+    if (!solved) return 0;
+    return Math.round((correct / solved) * 100);
+  }
+
+  function safeReadiness() {
+    if (!window.stats && typeof stats === "undefined") return 0;
+    if (!stats || !stats.solved) return 0;
+
+    const acc = safeAccuracy(stats.correct, stats.solved);
+    const solvedBonus = Math.min(25, Math.round(stats.solved / 4));
+
+    return Math.min(100, Math.round(acc * 0.75 + solvedBonus));
+  }
+
+  function safeDaysLeft() {
+    const diff = EXAM_DATE - new Date();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }
+
+  function safeForecast() {
+    const readiness = safeReadiness();
+
+    if (readiness === 0) return "—";
+    if (readiness < 35) return "45 → 58";
+    if (readiness < 55) return "58 → 70";
+    if (readiness < 75) return "70 → 82";
+    if (readiness < 90) return "82 → 90";
+    return "90+";
+  }
+
+  function safeWeakTopics(limit) {
+    if (!stats || !stats.byTopic) return [];
+
+    return Object.keys(stats.byTopic)
+      .map(function (topic) {
+        const item = stats.byTopic[topic];
+
+        return {
+          name: topic,
+          solved: item.solved || 0,
+          correct: item.correct || 0,
+          wrong: item.wrong || 0,
+          accuracy: safeAccuracy(item.correct || 0, item.solved || 0)
+        };
+      })
+      .filter(function (item) {
+        return item.solved >= 1 && item.wrong > 0;
+      })
+      .sort(function (a, b) {
+        if (a.accuracy !== b.accuracy) return a.accuracy - b.accuracy;
+        return b.wrong - a.wrong;
+      })
+      .slice(0, limit);
+  }
+
+  function safeUniqueSubjects() {
+    if (!Array.isArray(tasks)) return [];
+
+    return [...new Set(
+      tasks
+        .map(function (task) { return task.subject; })
+        .filter(Boolean)
+    )];
+  }
+
+  function safeSubjectPercent(subject) {
+    if (!Array.isArray(tasks) || !tasks.length) return 0;
+
+    const subjectTasks = tasks.filter(function (task) {
+      return task.subject === subject;
+    });
+
+    if (!subjectTasks.length) return 0;
+
+    const solved = subjectTasks.filter(function (task) {
+      return solvedTasks.includes(task.id);
+    }).length;
+
+    const progressBySolved = Math.round((solved / subjectTasks.length) * 100);
+    const subjectStats = stats.bySubject && stats.bySubject[subject];
+
+    if (!subjectStats || !subjectStats.solved) {
+      return progressBySolved;
+    }
+
+    const acc = safeAccuracy(subjectStats.correct, subjectStats.solved);
+
+    return Math.round(progressBySolved * 0.55 + acc * 0.45);
+  }
+
+  function safeMainSubjects(limit) {
+    const subjects = safeUniqueSubjects();
+
+    if (!subjects.length) return [];
+
+    const usedSubjects = stats && stats.bySubject ? Object.keys(stats.bySubject) : [];
+
+    return subjects
+      .slice()
+      .sort(function (a, b) {
+        const aUsed = usedSubjects.includes(a) ? 1 : 0;
+        const bUsed = usedSubjects.includes(b) ? 1 : 0;
+
+        if (aUsed !== bUsed) return bUsed - aUsed;
+
+        const aSolved = stats.bySubject && stats.bySubject[a] ? stats.bySubject[a].solved : 0;
+        const bSolved = stats.bySubject && stats.bySubject[b] ? stats.bySubject[b].solved : 0;
+
+        return bSolved - aSolved;
+      })
+      .slice(0, limit);
+  }
+
+  function updateLiveDashboard() {
+    try {
+      const readiness = safeReadiness();
+      const daysLeft = safeDaysLeft();
+      const forecast = safeForecast();
+
+      const heroTitle = document.querySelector(".hero-panel h1");
+      const ring = document.querySelector(".progress-ring");
+      const compactPanels = document.querySelectorAll(".compact-panel");
+      const scoreTitle = document.querySelector(".score-panel h1");
+      const weakList = document.querySelector(".weak-panel .pill-list");
+      const todayList = document.querySelector(".today-panel .clean-list");
+      const aiText = document.querySelector(".ai-panel p");
+      const subjectPanel = document.querySelector(".subject-panel");
+
+      if (heroTitle) heroTitle.textContent = "Готовность к ЕГЭ: " + readiness + "%";
+      if (ring) ring.textContent = readiness + "%";
+
+      if (compactPanels[0]) {
+        const h1 = compactPanels[0].querySelector("h1");
+        const p = compactPanels[0].querySelector("p:last-child");
+
+        if (h1) h1.textContent = daysLeft;
+        if (p) p.textContent = "дней до экзамена";
+      }
+
+      if (compactPanels[1]) {
+        const h1 = compactPanels[1].querySelector("h1");
+        if (h1) h1.textContent = "80+";
+      }
+
+      if (scoreTitle) scoreTitle.textContent = forecast;
+
+      const weakTopics = safeWeakTopics(3);
+
+      if (weakList) {
+        weakList.innerHTML = "";
+
+        if (!weakTopics.length) {
+          ["Реши 3–5 заданий", "Ошибки появятся здесь", "Потом дадим план"].forEach(function (text) {
+            const span = document.createElement("span");
+            span.textContent = text;
+            weakList.appendChild(span);
+          });
+        } else {
+          weakTopics.forEach(function (item) {
+            const span = document.createElement("span");
+            span.textContent = item.name + " · " + item.accuracy + "%";
+            weakList.appendChild(span);
+          });
+        }
+      }
+
+      if (todayList) {
+        const firstWeak = weakTopics.length ? weakTopics[0].name : "Проценты";
+
+        todayList.innerHTML =
+          "<li>Решить 10 заданий</li>" +
+          "<li>Повторить: " + firstWeak + "</li>" +
+          "<li>Проверить статистику</li>";
+      }
+
+      if (aiText) {
+        if (weakTopics.length) {
+          aiText.textContent =
+            "Сегодня лучше потренировать: " +
+            weakTopics.map(function (item) { return item.name; }).join(", ") +
+            ". Эти темы сейчас слабее остальных.";
+        } else {
+          aiText.textContent =
+            "Сегодня лучше начать с базовой тренировки. После ошибок появятся персональные рекомендации.";
+        }
+      }
+
+      if (subjectPanel && Array.isArray(tasks) && tasks.length) {
+        const title = subjectPanel.querySelector(".section-title");
+        const subjects = safeMainSubjects(3);
+
+        const oldRows = subjectPanel.querySelectorAll(".subject-progress-row");
+        oldRows.forEach(function (row) {
+          row.remove();
+        });
+
+        subjects.forEach(function (subject) {
+          const percent = safeSubjectPercent(subject);
+
+          const row = document.createElement("div");
+          row.className = "subject-progress-row";
+          row.innerHTML =
+            "<div><b>" + subject + "</b><p>" + percent + "%</p></div>" +
+            '<div class="mini-progress"><span style="width:' + percent + '%"></span></div>';
+
+          subjectPanel.appendChild(row);
+        });
+      }
+    } catch (error) {
+      console.warn("Dashboard patch skipped:", error);
+    }
+  }
+
+  window.updateLiveDashboard = updateLiveDashboard;
+
+  setTimeout(updateLiveDashboard, 300);
+  setTimeout(updateLiveDashboard, 1000);
+  setTimeout(updateLiveDashboard, 2000);
+
+  setInterval(updateLiveDashboard, 2500);
+})();
