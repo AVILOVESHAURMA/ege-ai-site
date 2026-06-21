@@ -628,3 +628,158 @@ body{min-height:100vh;font-family:Inter,Arial,sans-serif;color:var(--text);backg
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ===== final visual polish ===== */
+
+/* 1. Кнопка "Сбросить статистику" ниже */
+.standalone-btn,
+#stats .btn.ghost,
+#stats button {
+  margin-top: 30px !important;
+}
+
+/* 2. Больше воздуха между бейджами и заголовками */
+.badge {
+  margin-bottom: 18px !important;
+}
+
+.badge + h1,
+.badge + h2,
+.badge + h3,
+.badge + b {
+  margin-top: 0 !important;
+}
+
+.panel > .badge {
+  margin-bottom: 20px !important;
+}
+
+.hero-panel .badge,
+.plan-main .badge,
+.filter-card .badge,
+.test-hero .badge,
+.chat-header .badge {
+  margin-bottom: 20px !important;
+}
+
+/* 3. Больше воздуха между текстом и кнопками */
+.panel p + .btn,
+.panel .muted + .btn,
+.panel ul + .btn,
+.panel .clean-list + .btn,
+.panel .pill-list + .btn,
+.test-hero .btn,
+.ai-panel .btn,
+.task-side .btn,
+.weak-panel .btn {
+  margin-top: 26px !important;
+}
+
+/* 4. Чуть аккуратнее заголовки внутри карточек */
+.panel h3 {
+  margin-bottom: 16px !important;
+  line-height: 1.15;
+}
+
+.panel p {
+  line-height: 1.55;
+}
+
+/* 5. Hover у карточек предметов заметнее и дороже */
+.subject-card {
+  transition:
+    transform 0.24s ease,
+    border-color 0.24s ease,
+    box-shadow 0.24s ease,
+    background 0.24s ease !important;
+}
+
+.subject-card:hover {
+  transform: translateY(-6px) scale(1.015) !important;
+  border-color: rgba(124, 60, 255, 0.55) !important;
+  box-shadow:
+    0 28px 80px rgba(124, 60, 255, 0.24),
+    0 0 0 1px rgba(124, 60, 255, 0.18) inset !important;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(34, 211, 238, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(35, 40, 58, 0.96), rgba(16, 19, 29, 0.96)) !important;
+}
+
+.subject-card:hover .icon {
+  box-shadow: 0 0 26px rgba(124, 60, 255, 0.45);
+}
+
+.subject-card:hover .bar span {
+  filter: brightness(1.25);
+}
+
+/* 6. Плавность у остальных интерактивных элементов */
+.btn,
+.nav,
+.panel,
+select,
+input {
+  transition:
+    transform 0.24s ease,
+    filter 0.24s ease,
+    border-color 0.24s ease,
+    box-shadow 0.24s ease,
+    background 0.24s ease !important;
+}
+
+/* 7. Страница статистики — меньше пустоты снизу */
+#stats.page {
+  padding-bottom: 24px !important;
+}
+
+#stats .stats {
+  margin-bottom: 18px !important;
+}
+
+#stats .stats-layout {
+  margin-bottom: 0 !important;
+}
+
+/* 8. Сама кнопка статистики аккуратнее */
+#stats button {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 9. Чуть лучше расстояние внутри страницы пробников */
+.test-hero p {
+  margin-top: 10px !important;
+  margin-bottom: 0 !important;
+}
+
+.tests-grid .panel {
+  min-height: auto;
+}
+
+/* 10. Задания — кнопки и поле не липнут */
+.answer-row {
+  gap: 16px !important;
+  margin-top: 26px !important;
+}
+
+/* 11. AI-чат — ввод аккуратнее */
+.chat-input-card {
+  gap: 16px !important;
+}
+
+.chat-input-card input {
+  min-height: 48px;
+}
+
+/* 12. Мобильная/узкая версия */
+@media (max-width: 900px) {
+  #stats button {
+    width: 100%;
+  }
+
+  .subject-card:hover {
+    transform: translateY(-3px) !important;
+  }
+}
