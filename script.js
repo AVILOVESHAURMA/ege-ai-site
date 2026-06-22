@@ -2016,3 +2016,564 @@ async function loadTasksWithExtra() {
 }
 
 setTimeout(loadTasksWithExtra, 300);
+
+/* ===== EGE readiness + goal + mini test patch ===== */
+/* Вставь в самый низ script.js.
+   Добавляет:
+   1) цель по баллам;
+   2) реальную готовность по выбранным предметам;
+   3) блок "что осталось до прогноза";
+   4) мини-пробник из базы заданий.
+*/
+
+(function () {
+  const GOALS_KEY = "egeAiSubjectGoals";
+  const MINI_TEST_KEY = "egeAiMiniTest";
+
+  let miniTest = JSON.parse(localStorage.getItem(MINI_TEST_KEY) || "null");
+
+  function readGoals() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(GOALS_KEY) || "{}");
+      return saved && typeof saved === "object" ? saved : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveGoals(goals) {
+    localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+  }
+
+  function selectedSubjectsReadiness() {
+    try {
+      const saved = JSON.parse(localStorage.getItem("selectedSubjects") || "[]");
+      return Array.isArray(saved) ? saved : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function allSubjectsReadiness() {
+    if (!Array.isArray(tasks)) return [];
+
+    return [...new Set(
+      tasks
+        .map(function (task) {
+          return task.subject;
+        })
+        .filter(Boolean)
+    )];
+  }
+
+  function subjectTasks(subject) {
+    if (!Array.isArray(tasks)) return [];
+
+    return tasks.filter(function (task) {
+      return task.subject === subject;
+    });
+  }
+
+  function subjectProgressData(subject) {
+    const subjectTaskList = subjectTasks(subject);
+
+    const solvedSubjectTasks = subjectTaskList.filter(function (task) {
+      return solvedTasks.includes(task.id);
+    });
+
+    const byEgeAll = {};
+    const byEgeSolved = {};
+    const byDifficultySolved = { easy: 0, medium: 0, hard: 0 };
+
+    subjectTaskList.forEach(function (task) {
+      const ege = task.egeNumber || "Без номера";
+      byEgeAll[ege] = (byEgeAll[ege] || 0) + 1;
+    });
+
+    solvedSubjectTasks.forEach(function (task) {
+      const ege = task.egeNumber || "Без номера";
+      const difficulty = task.difficulty || "easy";
+
+      byEgeSolved[ege] = (byEgeSolved[ege] || 0) + 1;
+
+      if (!byDifficultySolved[difficulty]) byDifficultySolved[difficulty] = 0;
+      byDifficultySolved[difficulty] += 1;
+    });
+
+    const subjectStat = stats.bySubject && stats.bySubject[subject]
+      ? stats.bySubject[subject]
+      : { solved: 0, correct: 0, wrong: 0 };
+
+    const accuracy = subjectStat.solved
+      ? Math.round((subjectStat.correct / subjectStat.solved) * 100)
+      : 0;
+
+    const egeNumbers = Object.keys(byEgeAll);
+
+    const coveredEge = egeNumbers.filter(function (ege) {
+      return (byEgeSolved[ege] || 0) >= 3;
+    }).length;
+
+    const coverage = egeNumbers.length
+      ? Math.round((coveredEge / egeNumbers.length) * 100)
+      : 0;
+
+    const volume = Math.min(100, Math.round((solvedSubjectTasks.length / 60) * 100));
+    const difficulty = Math.min(
+      100,
+      Math.round(((byDifficultySolved.medium || 0) / 12) * 50 + ((byDifficultySolved.hard || 0) / 5) * 50)
+    );
+
+    const readiness = Math.round(
+      volume * 0.35 +
+      coverage * 0.35 +
+      difficulty * 0.15 +
+      accuracy * 0.15
+    );
+
+    return {
+      total: subjectTaskList.length,
+      solved: solvedSubjectTasks.length,
+      attempts: subjectStat.solved || 0,
+      correct: subjectStat.correct || 0,
+      wrong: subjectStat.wrong || 0,
+      accuracy: accuracy,
+      egeNumbers: egeNumbers,
+      coveredEge: coveredEge,
+      coverage: coverage,
+      byEgeSolved: byEgeSolved,
+      byDifficultySolved: byDifficultySolved,
+      readiness: Math.max(0, Math.min(100, readiness))
+    };
+  }
+
+  function forecastRequirementsReadiness(subject) {
+    const data = subjectProgressData(subject);
+
+    const req = [];
+
+    if (data.solved < 30) {
+      req.push("Решить ещё " + (30 - data.solved) + " заданий");
+    }
+
+    const notCovered = data.egeNumbers.filter(function (ege) {
+      return (data.byEgeSolved[ege] || 0) < 3;
+    });
+
+    if (notCovered.length) {
+      req.push("Закрыть номера ЕГЭ: " + notCovered.slice(0, 3).join(", "));
+    }
+
+    if ((data.byDifficultySolved.medium || 0) < 12) {
+      req.push("Решить ещё " + (12 - (data.byDifficultySolved.medium || 0)) + " medium-заданий");
+    }
+
+    if ((data.byDifficultySolved.hard || 0) < 5) {
+      req.push("Решить ещё " + (5 - (data.byDifficultySolved.hard || 0)) + " hard-заданий");
+    }
+
+    req.push("Пройти 1 мини-пробник");
+
+    return req;
+  }
+
+  function createReadinessPageIfNeeded() {
+    const main = document.querySelector(".main");
+    if (!main) return;
+
+    if (document.getElementById("readiness")) return;
+
+    const section = document.createElement("section");
+    section.className = "page";
+    section.id = "readiness";
+
+    section.innerHTML =
+      '<div class="page-head">' +
+        '<div>' +
+          '<h3>Готовность к ЕГЭ</h3>' +
+          '<p class="muted">Цели, готовность, прогноз и мини-пробник по выбранным предметам.</p>' +
+        '</div>' +
+        '<button class="btn small" id="saveGoalsBtn" type="button">Сохранить цели</button>' +
+      '</div>' +
+
+      '<div class="readiness-layout">' +
+        '<div class="panel readiness-main">' +
+          '<div class="section-title">' +
+            '<div>' +
+              '<p class="badge">Мои цели</p>' +
+              '<h3>Цель и готовность</h3>' +
+            '</div>' +
+            '<p class="muted">Цель — балл, к которому готовится ученик</p>' +
+          '</div>' +
+          '<div id="readinessSubjectList" class="readiness-subject-list"></div>' +
+        '</div>' +
+
+        '<div class="panel readiness-side">' +
+          '<p class="badge">Мини-пробник</p>' +
+          '<h3>Собрать тренировку</h3>' +
+          '<p class="muted">Сайт выберет задания из базы: лёгкие, средние и сложные.</p>' +
+          '<select id="miniTestSubject"></select>' +
+          '<button class="btn small" id="startMiniTestBtn" type="button">Собрать мини-пробник</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div id="miniTestBox" class="panel mini-test-box"></div>';
+
+    main.appendChild(section);
+
+    const saveBtn = section.querySelector("#saveGoalsBtn");
+    if (saveBtn) saveBtn.addEventListener("click", saveGoalInputs);
+
+    const startBtn = section.querySelector("#startMiniTestBtn");
+    if (startBtn) startBtn.addEventListener("click", startMiniTest);
+  }
+
+  function createReadinessNavIfNeeded() {
+    const navGroup = document.querySelector(".nav-group") || document.querySelector(".sidebar");
+    if (!navGroup) return;
+
+    if (document.querySelector('[data-page="readiness"]')) return;
+
+    const btn = document.createElement("button");
+    btn.className = "nav";
+    btn.dataset.page = "readiness";
+    btn.textContent = "🎯 Готовность";
+
+    const forecastBtn = document.querySelector('[data-page="forecast"]');
+    const planBtn = document.querySelector('[data-page="plan"]');
+
+    if (forecastBtn && forecastBtn.parentNode) {
+      forecastBtn.parentNode.insertBefore(btn, forecastBtn);
+    } else if (planBtn && planBtn.parentNode) {
+      planBtn.parentNode.insertBefore(btn, planBtn.nextSibling);
+    } else {
+      navGroup.appendChild(btn);
+    }
+
+    btn.addEventListener("click", function () {
+      openPage("readiness");
+    });
+  }
+
+  function renderReadinessPage() {
+    createReadinessPageIfNeeded();
+
+    const list = document.getElementById("readinessSubjectList");
+    const select = document.getElementById("miniTestSubject");
+
+    if (!list || !select) return;
+
+    const selected = selectedSubjectsReadiness();
+    const subjects = selected.length ? selected : allSubjectsReadiness();
+    const goals = readGoals();
+
+    list.innerHTML = "";
+    select.innerHTML = "";
+
+    if (!subjects.length) {
+      list.innerHTML =
+        '<div class="empty-state"><h3>Предметы не выбраны</h3><p class="muted">Сначала выбери предметы в разделе “Предметы”.</p></div>';
+      return;
+    }
+
+    subjects.forEach(function (subject) {
+      const data = subjectProgressData(subject);
+      const req = forecastRequirementsReadiness(subject);
+      const goal = goals[subject] || 80;
+
+      const option = document.createElement("option");
+      option.value = subject;
+      option.textContent = subject;
+      select.appendChild(option);
+
+      const card = document.createElement("div");
+      card.className = "readiness-subject-card";
+
+      card.innerHTML =
+        '<div class="readiness-card-top">' +
+          '<div>' +
+            '<b>' + subject + '</b>' +
+            '<p class="muted">Готовность: ' + data.readiness + '% · решено ' + data.solved + ' из ' + data.total + '</p>' +
+          '</div>' +
+          '<label>Цель <input class="goal-input" data-subject="' + subject + '" type="number" min="40" max="100" value="' + goal + '"></label>' +
+        '</div>' +
+        '<div class="readiness-bar"><span style="width:' + data.readiness + '%"></span></div>' +
+        '<div class="readiness-stats">' +
+          '<span>Точность: ' + data.accuracy + '%</span>' +
+          '<span>Номера ЕГЭ: ' + data.coveredEge + '/' + data.egeNumbers.length + '</span>' +
+          '<span>Попыток: ' + data.attempts + '</span>' +
+        '</div>' +
+        '<div class="readiness-requirements">' +
+          '<b>До нормального прогноза осталось:</b>' +
+          '<ul>' +
+            req.slice(0, 5).map(function (item) {
+              return '<li>' + item + '</li>';
+            }).join("") +
+          '</ul>' +
+        '</div>';
+
+      list.appendChild(card);
+    });
+
+    renderMiniTestBox();
+  }
+
+  function saveGoalInputs() {
+    const goals = readGoals();
+
+    document.querySelectorAll(".goal-input").forEach(function (input) {
+      const subject = input.dataset.subject;
+      let value = Number(input.value);
+
+      if (!value || value < 40) value = 40;
+      if (value > 100) value = 100;
+
+      goals[subject] = value;
+    });
+
+    saveGoals(goals);
+    renderReadinessPage();
+    updateDashboardReadiness();
+  }
+
+  function pickTasksForMiniTest(subject) {
+    const pool = subjectTasks(subject).filter(function (task) {
+      return !solvedTasks.includes(task.id);
+    });
+
+    const easy = pool.filter(function (task) { return task.difficulty === "easy"; });
+    const medium = pool.filter(function (task) { return task.difficulty === "medium"; });
+    const hard = pool.filter(function (task) { return task.difficulty === "hard"; });
+
+    function shuffle(arr) {
+      return arr.slice().sort(function () {
+        return Math.random() - 0.5;
+      });
+    }
+
+    const selected = []
+      .concat(shuffle(easy).slice(0, 5))
+      .concat(shuffle(medium).slice(0, 7))
+      .concat(shuffle(hard).slice(0, 3));
+
+    if (selected.length < 10) {
+      const used = selected.map(function (task) { return task.id; });
+      const rest = shuffle(pool).filter(function (task) {
+        return !used.includes(task.id);
+      });
+
+      return selected.concat(rest.slice(0, 10 - selected.length));
+    }
+
+    return selected;
+  }
+
+  function startMiniTest() {
+    const select = document.getElementById("miniTestSubject");
+    if (!select) return;
+
+    const subject = select.value;
+    const selectedTasks = pickTasksForMiniTest(subject);
+
+    miniTest = {
+      subject: subject,
+      taskIds: selectedTasks.map(function (task) { return task.id; }),
+      current: 0,
+      answers: {},
+      finished: false,
+      startedAt: Date.now()
+    };
+
+    localStorage.setItem(MINI_TEST_KEY, JSON.stringify(miniTest));
+    renderMiniTestBox();
+  }
+
+  function getMiniTestTasks() {
+    if (!miniTest || !Array.isArray(tasks)) return [];
+
+    return miniTest.taskIds
+      .map(function (id) {
+        return tasks.find(function (task) {
+          return task.id === id;
+        });
+      })
+      .filter(Boolean);
+  }
+
+  function renderMiniTestBox() {
+    const box = document.getElementById("miniTestBox");
+    if (!box) return;
+
+    if (!miniTest || !miniTest.taskIds || !miniTest.taskIds.length) {
+      box.innerHTML =
+        '<div class="section-title">' +
+          '<div><p class="badge">Мини-пробник</p><h3>Пробник ещё не собран</h3></div>' +
+        '</div>' +
+        '<p class="muted">Выбери предмет и нажми “Собрать мини-пробник”.</p>';
+      return;
+    }
+
+    const testTasks = getMiniTestTasks();
+
+    if (miniTest.finished) {
+      const correct = Object.keys(miniTest.answers).filter(function (id) {
+        const task = tasks.find(function (item) { return item.id === id; });
+        if (!task) return false;
+
+        const userAnswer = String(miniTest.answers[id] || "").trim().toLowerCase().replace(",", ".");
+        const correctAnswer = String(task.answer).trim().toLowerCase().replace(",", ".");
+
+        return userAnswer === correctAnswer;
+      }).length;
+
+      const percent = testTasks.length ? Math.round((correct / testTasks.length) * 100) : 0;
+
+      box.innerHTML =
+        '<div class="section-title">' +
+          '<div><p class="badge">' + miniTest.subject + '</p><h3>Мини-пробник завершён</h3></div>' +
+          '<h1>' + correct + '/' + testTasks.length + '</h1>' +
+        '</div>' +
+        '<p class="muted">Результат: ' + percent + '%. Эти данные позже будут влиять на прогноз балла.</p>' +
+        '<button class="btn small ghost" id="clearMiniTestBtn" type="button">Собрать новый</button>';
+
+      const clearBtn = document.getElementById("clearMiniTestBtn");
+      if (clearBtn) {
+        clearBtn.addEventListener("click", function () {
+          miniTest = null;
+          localStorage.removeItem(MINI_TEST_KEY);
+          renderMiniTestBox();
+        });
+      }
+
+      return;
+    }
+
+    const currentTask = testTasks[miniTest.current];
+
+    if (!currentTask) {
+      finishMiniTest();
+      return;
+    }
+
+    const savedAnswer = miniTest.answers[currentTask.id] || "";
+
+    box.innerHTML =
+      '<div class="section-title">' +
+        '<div>' +
+          '<p class="badge">' + miniTest.subject + '</p>' +
+          '<h3>Мини-пробник: ' + (miniTest.current + 1) + '/' + testTasks.length + '</h3>' +
+        '</div>' +
+        '<p class="muted">' + (currentTask.egeNumber || "") + ' · ' + (currentTask.difficulty || "") + '</p>' +
+      '</div>' +
+      '<div class="mini-test-question">' +
+        '<b>' + (currentTask.title || "Задание") + '</b>' +
+        '<p>' + (currentTask.question || "") + '</p>' +
+      '</div>' +
+      '<div class="mini-test-answer">' +
+        '<input id="miniTestAnswer" value="' + savedAnswer + '" placeholder="Ответ">' +
+        '<button class="btn small" id="miniTestNextBtn" type="button">' + (miniTest.current === testTasks.length - 1 ? "Завершить" : "Дальше") + '</button>' +
+      '</div>';
+
+    const nextBtn = document.getElementById("miniTestNextBtn");
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        const input = document.getElementById("miniTestAnswer");
+        miniTest.answers[currentTask.id] = input ? input.value.trim() : "";
+
+        if (miniTest.current >= testTasks.length - 1) {
+          finishMiniTest();
+        } else {
+          miniTest.current += 1;
+          localStorage.setItem(MINI_TEST_KEY, JSON.stringify(miniTest));
+          renderMiniTestBox();
+        }
+      });
+    }
+  }
+
+  function finishMiniTest() {
+    miniTest.finished = true;
+    localStorage.setItem(MINI_TEST_KEY, JSON.stringify(miniTest));
+
+    const testTasks = getMiniTestTasks();
+
+    testTasks.forEach(function (task) {
+      const userAnswer = String(miniTest.answers[task.id] || "").trim().toLowerCase().replace(",", ".");
+      const correctAnswer = String(task.answer).trim().toLowerCase().replace(",", ".");
+
+      const isCorrect = userAnswer === correctAnswer;
+
+      if (userAnswer) {
+        registerAnswer(isCorrect, task);
+        markTaskAsSolved(task);
+      }
+    });
+
+    if (typeof renderSubjectCardsFixed === "function") renderSubjectCardsFixed();
+    if (typeof renderDashboardSubjectsFixed === "function") renderDashboardSubjectsFixed();
+    if (typeof renderSmartForecastCards === "function") renderSmartForecastCards();
+    if (typeof renderForecastPage === "function") renderForecastPage();
+
+    renderMiniTestBox();
+    updateDashboardReadiness();
+  }
+
+  function updateDashboardReadiness() {
+    const selected = selectedSubjectsReadiness();
+    const subjects = selected.length ? selected : allSubjectsReadiness();
+
+    if (!subjects.length) return;
+
+    const totalReadiness = Math.round(
+      subjects.reduce(function (sum, subject) {
+        return sum + subjectProgressData(subject).readiness;
+      }, 0) / subjects.length
+    );
+
+    const heroTitle = document.querySelector(".hero-panel h1");
+    const ring = document.querySelector(".progress-ring");
+
+    if (heroTitle) heroTitle.textContent = "Готовность к ЕГЭ: " + totalReadiness + "%";
+    if (ring) ring.textContent = totalReadiness + "%";
+  }
+
+  const oldOpenPageReadiness = window.openPage;
+  if (typeof oldOpenPageReadiness === "function") {
+    window.openPage = function (pageId) {
+      oldOpenPageReadiness(pageId);
+
+      if (pageId === "readiness") {
+        const title = document.getElementById("pageTitle");
+        if (title) title.textContent = "Готовность к ЕГЭ";
+        renderReadinessPage();
+      }
+
+      setTimeout(updateDashboardReadiness, 100);
+    };
+  }
+
+  const oldCheckAnswerReadiness = window.checkAnswer;
+  if (typeof oldCheckAnswerReadiness === "function") {
+    window.checkAnswer = function () {
+      oldCheckAnswerReadiness();
+      setTimeout(updateDashboardReadiness, 120);
+      setTimeout(renderReadinessPage, 180);
+    };
+  }
+
+  window.renderReadinessPage = renderReadinessPage;
+  window.updateDashboardReadiness = updateDashboardReadiness;
+
+  setTimeout(function () {
+    createReadinessNavIfNeeded();
+    createReadinessPageIfNeeded();
+    updateDashboardReadiness();
+  }, 600);
+
+  setTimeout(function () {
+    createReadinessNavIfNeeded();
+    createReadinessPageIfNeeded();
+    updateDashboardReadiness();
+  }, 1600);
+})();

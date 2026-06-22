@@ -1133,3 +1133,150 @@ input {
     width: 100%;
   }
 }
+
+/* ===== readiness + mini test styles ===== */
+
+.readiness-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.readiness-subject-list {
+  display: grid;
+  gap: 14px;
+}
+
+.readiness-subject-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.075);
+}
+
+.readiness-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.readiness-card-top label {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.goal-input {
+  min-width: 100px !important;
+  width: 100px !important;
+  padding: 10px 12px !important;
+  border-radius: 12px !important;
+}
+
+.readiness-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.075);
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.readiness-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--blue));
+}
+
+.readiness-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.readiness-stats span {
+  padding: 8px 10px;
+  border-radius: 999px;
+  color: var(--muted2);
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(255,255,255,.075);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.readiness-requirements {
+  margin-top: 16px;
+}
+
+.readiness-requirements ul {
+  margin-top: 10px;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: var(--muted2);
+}
+
+.readiness-side {
+  display: grid;
+  gap: 14px;
+  height: fit-content;
+}
+
+.readiness-side select {
+  width: 100%;
+  min-width: 0;
+}
+
+.mini-test-box {
+  margin-top: 16px;
+}
+
+.mini-test-question {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.075);
+}
+
+.mini-test-question p {
+  margin-top: 12px;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.mini-test-answer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.mini-test-answer input {
+  width: 100%;
+  min-width: 0;
+}
+
+@media(max-width: 1000px) {
+  .readiness-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media(max-width: 760px) {
+  .readiness-card-top,
+  .mini-test-answer {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .goal-input,
+  .mini-test-answer .btn {
+    width: 100% !important;
+  }
+}
