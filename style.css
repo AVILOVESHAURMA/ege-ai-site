@@ -1280,3 +1280,147 @@ input {
     width: 100% !important;
   }
 }
+
+/* ===== mini tests in Tests page styles ===== */
+
+.real-mini-test-panel {
+  margin-top: 16px;
+}
+
+.mini-test-timer {
+  min-width: 86px;
+  height: 46px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-weight: 950;
+  font-size: 18px;
+  background: rgba(124,60,255,.14);
+  border: 1px solid rgba(124,60,255,.28);
+  color: #fff;
+}
+
+.mini-test-timer.danger {
+  background: rgba(239,68,68,.16);
+  border-color: rgba(239,68,68,.35);
+  color: #fecaca;
+}
+
+.mini-test-start-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.mini-test-start-row select {
+  width: 100%;
+  min-width: 0;
+}
+
+.tests-mini-test-box {
+  margin-top: 18px;
+}
+
+.mini-test-empty {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.075);
+}
+
+.mini-test-empty p {
+  margin-top: 8px;
+}
+
+.mini-test-question-card {
+  display: grid;
+  gap: 18px;
+}
+
+.mini-test-question-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.mini-test-question-head h3 {
+  margin-top: 12px !important;
+}
+
+.mini-test-question-body {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.075);
+}
+
+.mini-test-question-body p {
+  margin-top: 12px !important;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.mini-test-answer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.mini-test-answer-row input {
+  width: 100%;
+  min-width: 0;
+}
+
+.mini-test-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.mini-test-result-grid div {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.075);
+}
+
+.mini-test-result-grid b {
+  display: block;
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.mini-test-result-grid span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.mini-test-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+@media(max-width: 900px) {
+  .mini-test-start-row,
+  .mini-test-answer-row,
+  .mini-test-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-test-start-row .btn,
+  .mini-test-answer-row .btn,
+  .mini-test-actions .btn {
+    width: 100%;
+  }
+
+  .mini-test-question-head {
+    display: grid;
+  }
+}

@@ -2577,3 +2577,502 @@ setTimeout(loadTasksWithExtra, 300);
     updateDashboardReadiness();
   }, 1600);
 })();
+
+/* ===== mini tests move to Tests page + timer patch ===== */
+/* Вставь в самый низ script.js.
+   Что делает:
+   1) мини-пробник теперь живёт во вкладке "Пробники";
+   2) из "Готовность" кнопка перекидывает в "Пробники";
+   3) добавляет таймер;
+   4) добавляет отдельную панель мини-пробника на странице tests.
+*/
+
+(function () {
+  const MINI_TEST_KEY = "egeAiMiniTest";
+  const MINI_TEST_DURATION = 15 * 60;
+
+  let miniTestTimerInterval = null;
+
+  function readMiniTestV2() {
+    try {
+      return JSON.parse(localStorage.getItem(MINI_TEST_KEY) || "null");
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveMiniTestV2(test) {
+    localStorage.setItem(MINI_TEST_KEY, JSON.stringify(test));
+  }
+
+  function selectedSubjectsTestsV2() {
+    try {
+      const saved = JSON.parse(localStorage.getItem("selectedSubjects") || "[]");
+      return Array.isArray(saved) ? saved : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function allSubjectsTestsV2() {
+    if (!Array.isArray(tasks)) return [];
+
+    return [...new Set(
+      tasks
+        .map(function (task) {
+          return task.subject;
+        })
+        .filter(Boolean)
+    )];
+  }
+
+  function subjectTasksTestsV2(subject) {
+    if (!Array.isArray(tasks)) return [];
+
+    return tasks.filter(function (task) {
+      return task.subject === subject;
+    });
+  }
+
+  function shuffleTestsV2(arr) {
+    return arr.slice().sort(function () {
+      return Math.random() - 0.5;
+    });
+  }
+
+  function pickMiniTestTasksV2(subject) {
+    const pool = subjectTasksTestsV2(subject).filter(function (task) {
+      return !solvedTasks.includes(task.id);
+    });
+
+    const easy = pool.filter(function (task) { return task.difficulty === "easy"; });
+    const medium = pool.filter(function (task) { return task.difficulty === "medium"; });
+    const hard = pool.filter(function (task) { return task.difficulty === "hard"; });
+
+    const selected = []
+      .concat(shuffleTestsV2(easy).slice(0, 5))
+      .concat(shuffleTestsV2(medium).slice(0, 7))
+      .concat(shuffleTestsV2(hard).slice(0, 3));
+
+    if (selected.length < 10) {
+      const used = selected.map(function (task) { return task.id; });
+      const rest = shuffleTestsV2(pool).filter(function (task) {
+        return !used.includes(task.id);
+      });
+
+      return selected.concat(rest.slice(0, 10 - selected.length));
+    }
+
+    return selected;
+  }
+
+  function getMiniTestTasksV2(test) {
+    if (!test || !Array.isArray(tasks)) return [];
+
+    return test.taskIds
+      .map(function (id) {
+        return tasks.find(function (task) {
+          return task.id === id;
+        });
+      })
+      .filter(Boolean);
+  }
+
+  function formatTimeV2(seconds) {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+
+    return String(min).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
+  }
+
+  function getTimeLeftV2(test) {
+    if (!test || !test.startedAt) return MINI_TEST_DURATION;
+
+    const passed = Math.floor((Date.now() - test.startedAt) / 1000);
+    return Math.max(0, MINI_TEST_DURATION - passed);
+  }
+
+  function createMiniTestPanelOnTestsPage() {
+    const testsPage = document.getElementById("tests");
+    if (!testsPage) return;
+
+    if (document.getElementById("realMiniTestPanel")) return;
+
+    const panel = document.createElement("div");
+    panel.id = "realMiniTestPanel";
+    panel.className = "panel real-mini-test-panel";
+
+    panel.innerHTML =
+      '<div class="section-title">' +
+        '<div>' +
+          '<p class="badge">Мини-пробник</p>' +
+          '<h3>Тренировочный пробник</h3>' +
+          '<p class="muted">15 минут, задания из выбранного предмета, результат сразу после завершения.</p>' +
+        '</div>' +
+        '<div id="miniTestTimer" class="mini-test-timer">15:00</div>' +
+      '</div>' +
+
+      '<div class="mini-test-start-row">' +
+        '<select id="testsMiniTestSubject"></select>' +
+        '<button class="btn small" id="testsStartMiniTestBtn" type="button">Собрать мини-пробник</button>' +
+      '</div>' +
+
+      '<div id="testsMiniTestBox" class="tests-mini-test-box"></div>';
+
+    testsPage.appendChild(panel);
+
+    const startBtn = panel.querySelector("#testsStartMiniTestBtn");
+    if (startBtn) {
+      startBtn.addEventListener("click", startMiniTestFromTestsPage);
+    }
+  }
+
+  function fillMiniTestSubjectSelect() {
+    const select = document.getElementById("testsMiniTestSubject");
+    if (!select) return;
+
+    const selected = selectedSubjectsTestsV2();
+    const subjects = selected.length ? selected : allSubjectsTestsV2();
+
+    const current = select.value;
+
+    select.innerHTML = "";
+
+    subjects.forEach(function (subject) {
+      const option = document.createElement("option");
+      option.value = subject;
+      option.textContent = subject;
+      select.appendChild(option);
+    });
+
+    if (current && subjects.includes(current)) {
+      select.value = current;
+    }
+  }
+
+  function startMiniTestFromTestsPage() {
+    const select = document.getElementById("testsMiniTestSubject");
+    if (!select) return;
+
+    const subject = select.value;
+    const selectedTasks = pickMiniTestTasksV2(subject);
+
+    if (!selectedTasks.length) {
+      const box = document.getElementById("testsMiniTestBox");
+      if (box) {
+        box.innerHTML =
+          '<div class="empty-state"><h3>Нет заданий</h3><p class="muted">По этому предмету пока не хватает нерешённых заданий.</p></div>';
+      }
+      return;
+    }
+
+    const test = {
+      subject: subject,
+      taskIds: selectedTasks.map(function (task) { return task.id; }),
+      current: 0,
+      answers: {},
+      finished: false,
+      startedAt: Date.now(),
+      duration: MINI_TEST_DURATION
+    };
+
+    saveMiniTestV2(test);
+    renderTestsMiniTestBox();
+    startMiniTestTimer();
+  }
+
+  function renderTestsMiniTestBox() {
+    createMiniTestPanelOnTestsPage();
+    fillMiniTestSubjectSelect();
+
+    const box = document.getElementById("testsMiniTestBox");
+    if (!box) return;
+
+    const test = readMiniTestV2();
+
+    if (!test || !test.taskIds || !test.taskIds.length) {
+      box.innerHTML =
+        '<div class="mini-test-empty">' +
+          '<h3>Мини-пробник ещё не собран</h3>' +
+          '<p class="muted">Выбери предмет выше и нажми “Собрать мини-пробник”.</p>' +
+        '</div>';
+      updateMiniTestTimerText();
+      return;
+    }
+
+    const testTasks = getMiniTestTasksV2(test);
+
+    if (test.finished) {
+      renderMiniTestResultV2(test, testTasks);
+      updateMiniTestTimerText();
+      return;
+    }
+
+    if (getTimeLeftV2(test) <= 0) {
+      finishMiniTestV2(true);
+      return;
+    }
+
+    const currentTask = testTasks[test.current];
+
+    if (!currentTask) {
+      finishMiniTestV2(false);
+      return;
+    }
+
+    const savedAnswer = test.answers[currentTask.id] || "";
+
+    box.innerHTML =
+      '<div class="mini-test-question-card">' +
+        '<div class="mini-test-question-head">' +
+          '<div>' +
+            '<p class="badge">' + test.subject + '</p>' +
+            '<h3>Задание ' + (test.current + 1) + ' из ' + testTasks.length + '</h3>' +
+          '</div>' +
+          '<div class="task-badges">' +
+            '<span>' + (currentTask.egeNumber || "") + '</span>' +
+            '<span>' + (currentTask.difficulty || "") + '</span>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="mini-test-question-body">' +
+          '<b>' + (currentTask.title || "Задание") + '</b>' +
+          '<p>' + (currentTask.question || "") + '</p>' +
+        '</div>' +
+
+        '<div class="mini-test-answer-row">' +
+          '<input id="testsMiniTestAnswer" value="' + savedAnswer + '" placeholder="Введите ответ">' +
+          '<button class="btn small" id="testsMiniTestNextBtn" type="button">' + (test.current === testTasks.length - 1 ? "Завершить" : "Дальше") + '</button>' +
+          '<button class="btn small ghost" id="testsMiniTestStopBtn" type="button">Завершить сейчас</button>' +
+        '</div>' +
+      '</div>';
+
+    const nextBtn = document.getElementById("testsMiniTestNextBtn");
+    const stopBtn = document.getElementById("testsMiniTestStopBtn");
+
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        saveCurrentMiniTestAnswerV2(currentTask.id);
+
+        const freshTest = readMiniTestV2();
+
+        if (freshTest.current >= testTasks.length - 1) {
+          finishMiniTestV2(false);
+        } else {
+          freshTest.current += 1;
+          saveMiniTestV2(freshTest);
+          renderTestsMiniTestBox();
+        }
+      });
+    }
+
+    if (stopBtn) {
+      stopBtn.addEventListener("click", function () {
+        saveCurrentMiniTestAnswerV2(currentTask.id);
+        finishMiniTestV2(false);
+      });
+    }
+
+    updateMiniTestTimerText();
+  }
+
+  function saveCurrentMiniTestAnswerV2(taskId) {
+    const input = document.getElementById("testsMiniTestAnswer");
+    const test = readMiniTestV2();
+
+    if (!test || !taskId) return;
+
+    test.answers[taskId] = input ? input.value.trim() : "";
+    saveMiniTestV2(test);
+  }
+
+  function finishMiniTestV2(timeExpired) {
+    let test = readMiniTestV2();
+    if (!test) return;
+
+    test.finished = true;
+    test.finishedAt = Date.now();
+    test.timeExpired = !!timeExpired;
+
+    saveMiniTestV2(test);
+
+    const testTasks = getMiniTestTasksV2(test);
+
+    testTasks.forEach(function (task) {
+      const userAnswer = String(test.answers[task.id] || "").trim().toLowerCase().replace(",", ".");
+      if (!userAnswer) return;
+
+      const correctAnswer = String(task.answer).trim().toLowerCase().replace(",", ".");
+      const isCorrect = userAnswer === correctAnswer;
+
+      registerAnswer(isCorrect, task);
+      markTaskAsSolved(task);
+    });
+
+    if (typeof renderSubjectCardsFixed === "function") renderSubjectCardsFixed();
+    if (typeof renderDashboardSubjectsFixed === "function") renderDashboardSubjectsFixed();
+    if (typeof renderSmartForecastCards === "function") renderSmartForecastCards();
+    if (typeof renderForecastPage === "function") renderForecastPage();
+    if (typeof renderReadinessPage === "function") renderReadinessPage();
+    if (typeof updateDashboardReadiness === "function") updateDashboardReadiness();
+
+    renderTestsMiniTestBox();
+  }
+
+  function renderMiniTestResultV2(test, testTasks) {
+    const box = document.getElementById("testsMiniTestBox");
+    if (!box) return;
+
+    const correct = Object.keys(test.answers || {}).filter(function (id) {
+      const task = tasks.find(function (item) {
+        return item.id === id;
+      });
+
+      if (!task) return false;
+
+      const userAnswer = String(test.answers[id] || "").trim().toLowerCase().replace(",", ".");
+      const correctAnswer = String(task.answer).trim().toLowerCase().replace(",", ".");
+
+      return userAnswer === correctAnswer;
+    }).length;
+
+    const answered = Object.keys(test.answers || {}).filter(function (id) {
+      return String(test.answers[id] || "").trim();
+    }).length;
+
+    const percent = testTasks.length ? Math.round((correct / testTasks.length) * 100) : 0;
+
+    box.innerHTML =
+      '<div class="mini-test-result">' +
+        '<div class="section-title">' +
+          '<div>' +
+            '<p class="badge">' + test.subject + '</p>' +
+            '<h3>Мини-пробник завершён</h3>' +
+            '<p class="muted">' + (test.timeExpired ? "Время вышло" : "Пробник завершён") + '</p>' +
+          '</div>' +
+          '<h1>' + correct + '/' + testTasks.length + '</h1>' +
+        '</div>' +
+
+        '<div class="mini-test-result-grid">' +
+          '<div><b>' + percent + '%</b><span>результат</span></div>' +
+          '<div><b>' + answered + '</b><span>отвечено</span></div>' +
+          '<div><b>' + (testTasks.length - answered) + '</b><span>пропущено</span></div>' +
+        '</div>' +
+
+        '<div class="mini-test-actions">' +
+          '<button class="btn small" id="newMiniTestBtn" type="button">Собрать новый</button>' +
+          '<button class="btn small ghost" id="goForecastAfterTestBtn" type="button">К прогнозу</button>' +
+        '</div>' +
+      '</div>';
+
+    const newBtn = document.getElementById("newMiniTestBtn");
+    const forecastBtn = document.getElementById("goForecastAfterTestBtn");
+
+    if (newBtn) {
+      newBtn.addEventListener("click", function () {
+        localStorage.removeItem(MINI_TEST_KEY);
+        renderTestsMiniTestBox();
+      });
+    }
+
+    if (forecastBtn) {
+      forecastBtn.addEventListener("click", function () {
+        openPage("forecast");
+      });
+    }
+  }
+
+  function startMiniTestTimer() {
+    if (miniTestTimerInterval) clearInterval(miniTestTimerInterval);
+
+    miniTestTimerInterval = setInterval(function () {
+      const test = readMiniTestV2();
+
+      if (!test || test.finished) {
+        updateMiniTestTimerText();
+        return;
+      }
+
+      const left = getTimeLeftV2(test);
+      updateMiniTestTimerText();
+
+      if (left <= 0) {
+        finishMiniTestV2(true);
+      }
+    }, 1000);
+  }
+
+  function updateMiniTestTimerText() {
+    const timer = document.getElementById("miniTestTimer");
+    if (!timer) return;
+
+    const test = readMiniTestV2();
+
+    if (!test || test.finished) {
+      timer.textContent = "15:00";
+      timer.classList.remove("danger");
+      return;
+    }
+
+    const left = getTimeLeftV2(test);
+    timer.textContent = formatTimeV2(left);
+
+    if (left <= 60) timer.classList.add("danger");
+    else timer.classList.remove("danger");
+  }
+
+  function redirectReadinessMiniTestButtons() {
+    document.querySelectorAll("#startMiniTestBtn").forEach(function (btn) {
+      if (btn.dataset.redirectFixed === "true") return;
+
+      btn.dataset.redirectFixed = "true";
+      btn.textContent = "Перейти к мини-пробнику";
+
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        openPage("tests");
+
+        setTimeout(function () {
+          renderTestsMiniTestBox();
+          const panel = document.getElementById("realMiniTestPanel");
+          if (panel) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 120);
+      }, true);
+    });
+  }
+
+  const oldOpenPageMiniTestsV2 = window.openPage;
+  if (typeof oldOpenPageMiniTestsV2 === "function") {
+    window.openPage = function (pageId) {
+      oldOpenPageMiniTestsV2(pageId);
+
+      if (pageId === "tests") {
+        const title = document.getElementById("pageTitle");
+        if (title) title.textContent = "Пробники";
+        createMiniTestPanelOnTestsPage();
+        renderTestsMiniTestBox();
+        startMiniTestTimer();
+      }
+
+      setTimeout(redirectReadinessMiniTestButtons, 150);
+    };
+  }
+
+  window.renderTestsMiniTestBox = renderTestsMiniTestBox;
+  window.startMiniTestFromTestsPage = startMiniTestFromTestsPage;
+
+  setTimeout(function () {
+    createMiniTestPanelOnTestsPage();
+    fillMiniTestSubjectSelect();
+    redirectReadinessMiniTestButtons();
+    startMiniTestTimer();
+  }, 700);
+
+  setTimeout(function () {
+    createMiniTestPanelOnTestsPage();
+    fillMiniTestSubjectSelect();
+    redirectReadinessMiniTestButtons();
+    startMiniTestTimer();
+  }, 1800);
+})();
