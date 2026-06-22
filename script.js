@@ -1531,3 +1531,423 @@ loadTasks();
   setTimeout(refreshSelectedSubjectsFixed, 1000);
   setTimeout(refreshSelectedSubjectsFixed, 2000);
 })();
+
+/* ===== smart subject forecast / requirements patch ===== */
+/* Вставь в самый низ script.js.
+   Честный прогноз:
+   - баллы не показываются после пары задач;
+   - показывает, что нужно дорешать;
+   - учитывает номера ЕГЭ, сложности и объём практики.
+*/
+
+(function () {
+  const MIN_TOTAL_FOR_DRAFT = 30;
+  const MIN_TOTAL_FOR_NORMAL = 60;
+  const MIN_EGE_TYPES = 3;
+  const MIN_PER_EGE = 3;
+  const MIN_MEDIUM = 12;
+  const MIN_HARD = 5;
+
+  function getSelectedSubjectsForecast() {
+    try {
+      const saved = JSON.parse(localStorage.getItem("selectedSubjects") || "[]");
+      return Array.isArray(saved) ? saved : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function getSubjectTasksForecast(subject) {
+    if (!Array.isArray(tasks)) return [];
+
+    return tasks.filter(function (task) {
+      return task.subject === subject;
+    });
+  }
+
+  function getSubjectStatsForecast(subject) {
+    const subjectTasks = getSubjectTasksForecast(subject);
+
+    const subjectStat = stats.bySubject && stats.bySubject[subject]
+      ? stats.bySubject[subject]
+      : { solved: 0, correct: 0, wrong: 0 };
+
+    const solvedUnique = subjectTasks.filter(function (task) {
+      return solvedTasks.includes(task.id);
+    }).length;
+
+    const byEge = {};
+    const byDifficulty = { easy: 0, medium: 0, hard: 0 };
+
+    subjectTasks.forEach(function (task) {
+      if (!solvedTasks.includes(task.id)) return;
+
+      const ege = task.egeNumber || "Без номера";
+      const difficulty = task.difficulty || "easy";
+
+      byEge[ege] = (byEge[ege] || 0) + 1;
+
+      if (!byDifficulty[difficulty]) byDifficulty[difficulty] = 0;
+      byDifficulty[difficulty] += 1;
+    });
+
+    const accuracy = subjectStat.solved
+      ? Math.round((subjectStat.correct / subjectStat.solved) * 100)
+      : 0;
+
+    return {
+      totalTasks: subjectTasks.length,
+      solvedUnique: solvedUnique,
+      solvedAttempts: subjectStat.solved || 0,
+      correct: subjectStat.correct || 0,
+      wrong: subjectStat.wrong || 0,
+      accuracy: accuracy,
+      byEge: byEge,
+      byDifficulty: byDifficulty
+    };
+  }
+
+  function getForecastRequirements(subject) {
+    const st = getSubjectStatsForecast(subject);
+    const allSubjectTasks = getSubjectTasksForecast(subject);
+
+    const allEgeNumbers = [...new Set(
+      allSubjectTasks
+        .map(function (task) { return task.egeNumber; })
+        .filter(Boolean)
+    )];
+
+    const requirements = [];
+
+    if (st.solvedUnique < MIN_TOTAL_FOR_DRAFT) {
+      requirements.push({
+        ok: false,
+        text: "Решить ещё " + (MIN_TOTAL_FOR_DRAFT - st.solvedUnique) + " заданий для чернового прогноза"
+      });
+    } else {
+      requirements.push({
+        ok: true,
+        text: "Минимум " + MIN_TOTAL_FOR_DRAFT + " заданий решён"
+      });
+    }
+
+    const coveredEge = Object.keys(st.byEge).filter(function (ege) {
+      return st.byEge[ege] >= MIN_PER_EGE;
+    });
+
+    const needEgeTypes = Math.min(MIN_EGE_TYPES, allEgeNumbers.length);
+
+    if (coveredEge.length < needEgeTypes) {
+      requirements.push({
+        ok: false,
+        text:
+          "Закрыть ещё " +
+          (needEgeTypes - coveredEge.length) +
+          " номера ЕГЭ по " + MIN_PER_EGE + " раза"
+      });
+    } else {
+      requirements.push({
+        ok: true,
+        text: "Несколько номеров ЕГЭ решены по " + MIN_PER_EGE + "+ раза"
+      });
+    }
+
+    if ((st.byDifficulty.medium || 0) < MIN_MEDIUM) {
+      requirements.push({
+        ok: false,
+        text: "Решить ещё " + (MIN_MEDIUM - (st.byDifficulty.medium || 0)) + " medium-заданий"
+      });
+    } else {
+      requirements.push({
+        ok: true,
+        text: "Достаточно medium-заданий"
+      });
+    }
+
+    if ((st.byDifficulty.hard || 0) < MIN_HARD) {
+      requirements.push({
+        ok: false,
+        text: "Решить ещё " + (MIN_HARD - (st.byDifficulty.hard || 0)) + " hard-заданий"
+      });
+    } else {
+      requirements.push({
+        ok: true,
+        text: "Есть сложные задания"
+      });
+    }
+
+    requirements.push({
+      ok: false,
+      text: "Мини-пробник пока не пройден"
+    });
+
+    return requirements;
+  }
+
+  function calculateSmartScoreRange(st, isDraft) {
+    let base = Math.round(st.accuracy * 0.72);
+
+    const volumeBonus = Math.min(14, Math.round(st.solvedUnique / 8));
+    const mediumBonus = Math.min(7, Math.round((st.byDifficulty.medium || 0) / 4));
+    const hardBonus = Math.min(8, Math.round((st.byDifficulty.hard || 0) / 2));
+
+    let score = base + volumeBonus + mediumBonus + hardBonus;
+
+    if (isDraft) score = Math.min(score, 72);
+
+    score = Math.max(35, Math.min(95, score));
+
+    const low = Math.max(30, score - (isDraft ? 10 : 6));
+    const high = Math.min(100, score + (isDraft ? 10 : 6));
+
+    return low + "–" + high + " баллов";
+  }
+
+  function getSmartForecast(subject) {
+    const st = getSubjectStatsForecast(subject);
+    const requirements = getForecastRequirements(subject);
+    const failed = requirements.filter(function (item) { return !item.ok; });
+
+    if (st.solvedUnique < MIN_TOTAL_FOR_DRAFT) {
+      return {
+        status: "locked",
+        title: "Прогноз закрыт",
+        score: "Недостаточно данных",
+        confidence: "низкая",
+        requirements: requirements
+      };
+    }
+
+    if (failed.length > 1 || st.solvedUnique < MIN_TOTAL_FOR_NORMAL) {
+      return {
+        status: "draft",
+        title: "Черновой прогноз",
+        score: calculateSmartScoreRange(st, true),
+        confidence: "низкая",
+        requirements: requirements
+      };
+    }
+
+    return {
+      status: "normal",
+      title: "Прогноз балла",
+      score: calculateSmartScoreRange(st, false),
+      confidence: "средняя",
+      requirements: requirements
+    };
+  }
+
+  function requirementsHTML(requirements) {
+    return requirements
+      .slice(0, 5)
+      .map(function (item) {
+        return '<li class="' + (item.ok ? "ok" : "no") + '">' +
+          '<span>' + (item.ok ? "✓" : "×") + '</span>' +
+          item.text +
+        '</li>';
+      })
+      .join("");
+  }
+
+  function renderSmartForecastCards() {
+    const cards = document.querySelectorAll(".selectable-subject-card");
+
+    cards.forEach(function (card) {
+      const title = card.querySelector("h3");
+      if (!title) return;
+
+      const subject = title.textContent.trim();
+      const forecast = getSmartForecast(subject);
+
+      let box = card.querySelector(".smart-forecast-box");
+
+      if (!box) {
+        box = document.createElement("div");
+        box.className = "smart-forecast-box";
+        card.appendChild(box);
+      }
+
+      box.innerHTML =
+        '<div class="smart-forecast-top">' +
+          '<b>' + forecast.score + '</b>' +
+          '<span>' + forecast.title + '</span>' +
+        '</div>' +
+        '<p>Точность прогноза: ' + forecast.confidence + '</p>' +
+        '<ul>' + requirementsHTML(forecast.requirements) + '</ul>';
+    });
+
+    renderDashboardSmartForecasts();
+  }
+
+  function renderDashboardSmartForecasts() {
+    const panel = document.querySelector(".subject-panel");
+    if (!panel || !Array.isArray(tasks) || !tasks.length) return;
+
+    panel.querySelectorAll(".selected-dashboard-row").forEach(function (row) {
+      const subjectName = row.querySelector("b");
+      const p = row.querySelector("p");
+
+      if (!subjectName || !p) return;
+
+      const subject = subjectName.textContent.trim();
+      const forecast = getSmartForecast(subject);
+      const st = getSubjectStatsForecast(subject);
+
+      p.textContent =
+        st.solvedUnique + " решено · " +
+        forecast.score + " · " +
+        forecast.confidence + " точность";
+    });
+  }
+
+  function createForecastPageIfNeeded() {
+    const main = document.querySelector(".main");
+    if (!main) return;
+
+    if (document.getElementById("forecast")) return;
+
+    const section = document.createElement("section");
+    section.className = "page";
+    section.id = "forecast";
+
+    section.innerHTML =
+      '<div class="page-head">' +
+        '<div>' +
+          '<h3>Прогноз баллов</h3>' +
+          '<p class="muted">Честный прогноз открывается только после достаточной практики.</p>' +
+        '</div>' +
+        '<button class="btn small" onclick="openPage(\\'subjects\\')">К предметам</button>' +
+      '</div>' +
+      '<div id="forecastGrid" class="forecast-grid"></div>';
+
+    main.appendChild(section);
+  }
+
+  function createForecastNavIfNeeded() {
+    const navGroup = document.querySelector(".nav-group") || document.querySelector(".sidebar");
+    if (!navGroup) return;
+
+    if (document.querySelector('[data-page="forecast"]')) return;
+
+    const btn = document.createElement("button");
+    btn.className = "nav";
+    btn.dataset.page = "forecast";
+    btn.textContent = "📊 Прогноз";
+
+    const statsBtn = document.querySelector('[data-page="stats"]');
+
+    if (statsBtn && statsBtn.parentNode) {
+      statsBtn.parentNode.insertBefore(btn, statsBtn.nextSibling);
+    } else {
+      navGroup.appendChild(btn);
+    }
+
+    btn.addEventListener("click", function () {
+      openPage("forecast");
+    });
+  }
+
+  function renderForecastPage() {
+    createForecastPageIfNeeded();
+
+    const grid = document.getElementById("forecastGrid");
+    if (!grid) return;
+
+    const selected = getSelectedSubjectsForecast();
+    const subjects = selected.length
+      ? selected
+      : [...new Set(tasks.map(function (task) { return task.subject; }).filter(Boolean))];
+
+    grid.innerHTML = "";
+
+    if (!subjects.length) {
+      grid.innerHTML =
+        '<div class="panel"><h3>Пока нет предметов</h3><p class="muted">Сначала загрузи tasks.json и выбери предметы.</p></div>';
+      return;
+    }
+
+    subjects.forEach(function (subject) {
+      const st = getSubjectStatsForecast(subject);
+      const forecast = getSmartForecast(subject);
+
+      const card = document.createElement("div");
+      card.className = "panel forecast-card " + forecast.status;
+
+      card.innerHTML =
+        '<div class="forecast-card-head">' +
+          '<div>' +
+            '<p class="badge">' + subject + '</p>' +
+            '<h3>' + forecast.score + '</h3>' +
+            '<p class="muted">' + forecast.title + ' · точность: ' + forecast.confidence + '</p>' +
+          '</div>' +
+          '<div class="forecast-number">' + st.solvedUnique + '</div>' +
+        '</div>' +
+        '<div class="forecast-mini-stats">' +
+          '<span>Точность: ' + st.accuracy + '%</span>' +
+          '<span>Попыток: ' + st.solvedAttempts + '</span>' +
+          '<span>Уникальных: ' + st.solvedUnique + '</span>' +
+        '</div>' +
+        '<ul class="forecast-requirements">' +
+          requirementsHTML(forecast.requirements) +
+        '</ul>' +
+        '<button class="btn small ghost forecast-train-btn" data-subject="' + subject + '">Тренировать предмет</button>';
+
+      grid.appendChild(card);
+    });
+
+    grid.querySelectorAll(".forecast-train-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        openPage("tasks");
+
+        setTimeout(function () {
+          const subjectFilter = document.getElementById("subjectFilter");
+
+          if (subjectFilter) {
+            subjectFilter.value = btn.dataset.subject;
+            applyFilters();
+          }
+        }, 80);
+      });
+    });
+  }
+
+  const oldOpenPageForecast = window.openPage;
+  if (typeof oldOpenPageForecast === "function") {
+    window.openPage = function (pageId) {
+      oldOpenPageForecast(pageId);
+
+      if (pageId === "forecast") {
+        const title = document.getElementById("pageTitle");
+        if (title) title.textContent = "Прогноз баллов";
+        renderForecastPage();
+      }
+
+      setTimeout(renderSmartForecastCards, 120);
+    };
+  }
+
+  const oldCheckAnswerForecast = window.checkAnswer;
+  if (typeof oldCheckAnswerForecast === "function") {
+    window.checkAnswer = function () {
+      oldCheckAnswerForecast();
+      setTimeout(renderSmartForecastCards, 120);
+      setTimeout(renderForecastPage, 160);
+    };
+  }
+
+  window.getSmartForecast = getSmartForecast;
+  window.renderForecastPage = renderForecastPage;
+  window.renderSmartForecastCards = renderSmartForecastCards;
+
+  setTimeout(function () {
+    createForecastNavIfNeeded();
+    createForecastPageIfNeeded();
+    renderSmartForecastCards();
+  }, 500);
+
+  setTimeout(function () {
+    createForecastNavIfNeeded();
+    createForecastPageIfNeeded();
+    renderSmartForecastCards();
+  }, 1600);
+})();
