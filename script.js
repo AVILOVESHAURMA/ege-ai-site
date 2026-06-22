@@ -1958,3 +1958,61 @@ loadTasks();
     renderSmartForecastCards();
   }, 1600);
 })();
+
+/* ===== load extra tasks patch ===== */
+/* Вставь в самый низ script.js.
+   Положи tasks-extra-500.json рядом с tasks.json.
+   После этого сайт будет грузить старые tasks.json + новые tasks-extra-500.json.
+*/
+
+async function loadTasksWithExtra() {
+  try {
+    const mainResponse = await fetch("tasks.json");
+    const mainTasks = await mainResponse.json();
+
+    let extraTasks = [];
+
+    try {
+      const extraResponse = await fetch("tasks-extra-500.json");
+      extraTasks = await extraResponse.json();
+    } catch (e) {
+      console.warn("tasks-extra-500.json не найден, загружаю только tasks.json");
+    }
+
+    tasks = mainTasks.concat(extraTasks);
+
+    const uniqueMap = new Map();
+
+    tasks.forEach(function (task) {
+      if (!task || !task.id) return;
+      uniqueMap.set(task.id, task);
+    });
+
+    tasks = Array.from(uniqueMap.values());
+
+    filteredTasks = tasks.filter(function (task) {
+      return !solvedTasks.includes(task.id);
+    });
+
+    populateFilters();
+    renderSubjectCards();
+
+    if (filteredTasks.length > 0) {
+      currentTask = Math.floor(Math.random() * filteredTasks.length);
+    }
+
+    updateTaskCount();
+    renderTask();
+
+    if (typeof renderSubjectCardsFixed === "function") renderSubjectCardsFixed();
+    if (typeof renderDashboardSubjectsFixed === "function") renderDashboardSubjectsFixed();
+    if (typeof renderSmartForecastCards === "function") renderSmartForecastCards();
+    if (typeof renderForecastPage === "function") renderForecastPage();
+
+    console.log("EGE AI tasks loaded:", tasks.length);
+  } catch (error) {
+    console.error("Не удалось загрузить базу заданий", error);
+  }
+}
+
+setTimeout(loadTasksWithExtra, 300);
