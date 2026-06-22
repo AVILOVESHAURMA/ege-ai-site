@@ -983,3 +983,261 @@ loadTasks();
   setTimeout(initMistakesFeature, 300);
   setTimeout(initMistakesFeature, 1000);
 })();
+
+/* ===== selected subjects / personal cabinet patch ===== */
+/* Вставь в самый низ script.js. Добавляет выбор сдаваемых предметов и персональные предметы на главной. */
+
+(function () {
+  let selectedSubjects = JSON.parse(localStorage.getItem("selectedSubjects") || "[]");
+
+  function saveSelectedSubjects() {
+    localStorage.setItem("selectedSubjects", JSON.stringify(selectedSubjects));
+  }
+
+  function getAllSubjects() {
+    if (!Array.isArray(tasks)) return [];
+
+    return [...new Set(
+      tasks
+        .map(function (task) {
+          return task.subject;
+        })
+        .filter(Boolean)
+    )];
+  }
+
+  function ensureDefaultSubjects() {
+    const subjects = getAllSubjects();
+
+    if (!subjects.length) return;
+
+    if (!selectedSubjects.length) {
+      selectedSubjects = subjects.slice(0, 3);
+      saveSelectedSubjects();
+    }
+  }
+
+  function subjectStats(subject) {
+    const subjectTasks = tasks.filter(function (task) {
+      return task.subject === subject;
+    });
+
+    const solved = subjectTasks.filter(function (task) {
+      return solvedTasks.includes(task.id);
+    }).length;
+
+    const total = subjectTasks.length;
+    const percent = total ? Math.round((solved / total) * 100) : 0;
+
+    const stat = stats.bySubject && stats.bySubject[subject]
+      ? stats.bySubject[subject]
+      : { solved: 0, correct: 0, wrong: 0 };
+
+    const acc = stat.solved ? Math.round((stat.correct / stat.solved) * 100) : 0;
+
+    return {
+      solved: solved,
+      total: total,
+      percent: percent,
+      accuracy: acc
+    };
+  }
+
+  function forecastForSubject(subject) {
+    const data = subjectStats(subject);
+
+    if (data.solved < 10) {
+      return {
+        text: "Недостаточно данных",
+        need: "Нужно ещё: " + (10 - data.solved) + " задач"
+      };
+    }
+
+    if (data.solved < 25) {
+      return {
+        text: "Первичный прогноз",
+        need: "Реши ещё " + (25 - data.solved) + " задач для точности"
+      };
+    }
+
+    let score = Math.round(data.accuracy * 0.75 + data.percent * 0.25);
+
+    if (score < 40) score = 40;
+    if (score > 95) score = 95;
+
+    return {
+      text: score + "–" + Math.min(100, score + 8) + " баллов",
+      need: "Прогноз по текущей статистике"
+    };
+  }
+
+  function renderSubjectCardsWithSelection() {
+    const container = document.getElementById("subjectCards");
+
+    if (!container || !Array.isArray(tasks) || !tasks.length) return;
+
+    ensureDefaultSubjects();
+
+    container.innerHTML = "";
+
+    const subjects = getAllSubjects();
+
+    subjects.forEach(function (subject) {
+      const data = subjectStats(subject);
+      const forecast = forecastForSubject(subject);
+      const isSelected = selectedSubjects.includes(subject);
+
+      const card = document.createElement("div");
+      card.className = "panel subject-card selectable-subject-card" + (isSelected ? " selected-subject" : "");
+
+      card.innerHTML =
+        '<div class="subject-glow"></div>' +
+        '<button class="subject-check" data-subject="' + subject + '">' + (isSelected ? "✓" : "+") + "</button>" +
+        '<div class="icon">' + (SUBJECT_META[subject] || "📚") + "</div>" +
+        "<h3>" + subject + "</h3>" +
+        "<p>" + data.solved + " / " + data.total + " решено</p>" +
+        '<div class="bar"><span style="width:' + data.percent + '%"></span></div>' +
+        '<div class="subject-forecast">' +
+          '<b>' + forecast.text + '</b>' +
+          '<span>' + forecast.need + '</span>' +
+        '</div>';
+
+      card.addEventListener("click", function (event) {
+        if (event.target.classList.contains("subject-check")) {
+          toggleSubject(subject);
+          return;
+        }
+
+        openPage("tasks");
+
+        const subjectFilter = document.getElementById("subjectFilter");
+
+        if (subjectFilter) {
+          subjectFilter.value = subject;
+          applyFilters();
+        }
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  function toggleSubject(subject) {
+    if (selectedSubjects.includes(subject)) {
+      selectedSubjects = selectedSubjects.filter(function (item) {
+        return item !== subject;
+      });
+    } else {
+      selectedSubjects.push(subject);
+    }
+
+    saveSelectedSubjects();
+    renderSubjectCardsWithSelection();
+    renderSelectedSubjectsOnDashboard();
+    updatePlanForSelectedSubjects();
+  }
+
+  function renderSelectedSubjectsOnDashboard() {
+    const subjectPanel = document.querySelector(".subject-panel");
+
+    if (!subjectPanel || !Array.isArray(tasks) || !tasks.length) return;
+
+    ensureDefaultSubjects();
+
+    const oldTitle = subjectPanel.querySelector(".section-title");
+
+    subjectPanel.innerHTML = "";
+
+    if (oldTitle) {
+      subjectPanel.appendChild(oldTitle);
+    } else {
+      const title = document.createElement("div");
+      title.className = "section-title";
+      title.innerHTML =
+        '<b>📚 Мои предметы</b><button class="btn small ghost" onclick="openPage(\'subjects\')">Выбрать</button>';
+      subjectPanel.appendChild(title);
+    }
+
+    selectedSubjects.forEach(function (subject) {
+      const data = subjectStats(subject);
+      const forecast = forecastForSubject(subject);
+
+      const row = document.createElement("div");
+      row.className = "subject-progress-row selected-dashboard-row";
+      row.innerHTML =
+        "<div><b>" + subject + "</b><p>" + data.percent + "% · " + forecast.text + "</p></div>" +
+        '<div class="mini-progress"><span style="width:' + data.percent + '%"></span></div>';
+
+      subjectPanel.appendChild(row);
+    });
+
+    if (!selectedSubjects.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "Выбери предметы, которые будешь сдавать.";
+      subjectPanel.appendChild(empty);
+    }
+  }
+
+  function updatePlanForSelectedSubjects() {
+    const todayList = document.querySelector(".today-panel .clean-list");
+
+    if (!todayList) return;
+
+    ensureDefaultSubjects();
+
+    if (!selectedSubjects.length) {
+      todayList.innerHTML =
+        "<li>Выбери сдаваемые предметы</li>" +
+        "<li>Реши стартовые задания</li>" +
+        "<li>Проверь статистику</li>";
+      return;
+    }
+
+    const first = selectedSubjects[0];
+    const second = selectedSubjects[1] || selectedSubjects[0];
+
+    todayList.innerHTML =
+      "<li>5 задач: " + first + "</li>" +
+      "<li>5 задач: " + second + "</li>" +
+      "<li>1 разбор ошибок</li>";
+  }
+
+  const oldRenderSubjectCards = window.renderSubjectCards;
+  if (typeof oldRenderSubjectCards === "function") {
+    window.renderSubjectCards = function () {
+      renderSubjectCardsWithSelection();
+    };
+  }
+
+  const oldOpenPage = window.openPage;
+  if (typeof oldOpenPage === "function") {
+    window.openPage = function (pageId) {
+      oldOpenPage(pageId);
+
+      if (pageId === "subjects") {
+        renderSubjectCardsWithSelection();
+      }
+
+      renderSelectedSubjectsOnDashboard();
+      updatePlanForSelectedSubjects();
+    };
+  }
+
+  window.renderSubjectCardsWithSelection = renderSubjectCardsWithSelection;
+  window.renderSelectedSubjectsOnDashboard = renderSelectedSubjectsOnDashboard;
+
+  setTimeout(function () {
+    ensureDefaultSubjects();
+    renderSubjectCardsWithSelection();
+    renderSelectedSubjectsOnDashboard();
+    updatePlanForSelectedSubjects();
+  }, 400);
+
+  setTimeout(function () {
+    ensureDefaultSubjects();
+    renderSubjectCardsWithSelection();
+    renderSelectedSubjectsOnDashboard();
+    updatePlanForSelectedSubjects();
+  }, 1200);
+})();
