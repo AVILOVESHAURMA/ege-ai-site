@@ -1532,12 +1532,9 @@ loadTasks();
   setTimeout(refreshSelectedSubjectsFixed, 2000);
 })();
 
-/* ===== smart subject forecast / requirements patch ===== */
-/* Вставь в самый низ script.js.
-   Честный прогноз:
-   - баллы не показываются после пары задач;
-   - показывает, что нужно дорешать;
-   - учитывает номера ЕГЭ, сложности и объём практики.
+/* ===== smart forecast FIX v2 ===== */
+/* Если старый smart-forecast-patch дал ошибку, удали старый smart-forecast-patch
+   из конца script.js и вставь этот блок в самый низ script.js.
 */
 
 (function () {
@@ -1613,7 +1610,9 @@ loadTasks();
 
     const allEgeNumbers = [...new Set(
       allSubjectTasks
-        .map(function (task) { return task.egeNumber; })
+        .map(function (task) {
+          return task.egeNumber;
+        })
         .filter(Boolean)
     )];
 
@@ -1640,10 +1639,7 @@ loadTasks();
     if (coveredEge.length < needEgeTypes) {
       requirements.push({
         ok: false,
-        text:
-          "Закрыть ещё " +
-          (needEgeTypes - coveredEge.length) +
-          " номера ЕГЭ по " + MIN_PER_EGE + " раза"
+        text: "Закрыть ещё " + (needEgeTypes - coveredEge.length) + " номера ЕГЭ по " + MIN_PER_EGE + " раза"
       });
     } else {
       requirements.push({
@@ -1706,7 +1702,9 @@ loadTasks();
   function getSmartForecast(subject) {
     const st = getSubjectStatsForecast(subject);
     const requirements = getForecastRequirements(subject);
-    const failed = requirements.filter(function (item) { return !item.ok; });
+    const failed = requirements.filter(function (item) {
+      return !item.ok;
+    });
 
     if (st.solvedUnique < MIN_TOTAL_FOR_DRAFT) {
       return {
@@ -1816,11 +1814,18 @@ loadTasks();
           '<h3>Прогноз баллов</h3>' +
           '<p class="muted">Честный прогноз открывается только после достаточной практики.</p>' +
         '</div>' +
-        '<button class="btn small" onclick="openPage(\\'subjects\\')">К предметам</button>' +
+        '<button class="btn small forecast-to-subjects-btn" type="button">К предметам</button>' +
       '</div>' +
       '<div id="forecastGrid" class="forecast-grid"></div>';
 
     main.appendChild(section);
+
+    const btn = section.querySelector(".forecast-to-subjects-btn");
+    if (btn) {
+      btn.addEventListener("click", function () {
+        openPage("subjects");
+      });
+    }
   }
 
   function createForecastNavIfNeeded() {
@@ -1856,7 +1861,9 @@ loadTasks();
     const selected = getSelectedSubjectsForecast();
     const subjects = selected.length
       ? selected
-      : [...new Set(tasks.map(function (task) { return task.subject; }).filter(Boolean))];
+      : [...new Set(tasks.map(function (task) {
+          return task.subject;
+        }).filter(Boolean))];
 
     grid.innerHTML = "";
 
@@ -1890,7 +1897,7 @@ loadTasks();
         '<ul class="forecast-requirements">' +
           requirementsHTML(forecast.requirements) +
         '</ul>' +
-        '<button class="btn small ghost forecast-train-btn" data-subject="' + subject + '">Тренировать предмет</button>';
+        '<button class="btn small ghost forecast-train-btn" type="button" data-subject="' + subject + '">Тренировать предмет</button>';
 
       grid.appendChild(card);
     });
@@ -1911,10 +1918,10 @@ loadTasks();
     });
   }
 
-  const oldOpenPageForecast = window.openPage;
-  if (typeof oldOpenPageForecast === "function") {
+  const oldOpenPageForecastV2 = window.openPage;
+  if (typeof oldOpenPageForecastV2 === "function") {
     window.openPage = function (pageId) {
-      oldOpenPageForecast(pageId);
+      oldOpenPageForecastV2(pageId);
 
       if (pageId === "forecast") {
         const title = document.getElementById("pageTitle");
@@ -1926,10 +1933,10 @@ loadTasks();
     };
   }
 
-  const oldCheckAnswerForecast = window.checkAnswer;
-  if (typeof oldCheckAnswerForecast === "function") {
+  const oldCheckAnswerForecastV2 = window.checkAnswer;
+  if (typeof oldCheckAnswerForecastV2 === "function") {
     window.checkAnswer = function () {
-      oldCheckAnswerForecast();
+      oldCheckAnswerForecastV2();
       setTimeout(renderSmartForecastCards, 120);
       setTimeout(renderForecastPage, 160);
     };
