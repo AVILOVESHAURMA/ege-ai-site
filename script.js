@@ -687,8 +687,17 @@ loadTasks();
       }
 
       if (subjectPanel && Array.isArray(tasks) && tasks.length) {
-        const title = subjectPanel.querySelector(".section-title");
-        const subjects = safeMainSubjects(3);
+        let selectedSubjectsForDashboard = [];
+
+        try {
+          selectedSubjectsForDashboard = JSON.parse(localStorage.getItem("selectedSubjects") || "[]");
+        } catch (e) {
+          selectedSubjectsForDashboard = [];
+        }
+
+        const subjects = Array.isArray(selectedSubjectsForDashboard) && selectedSubjectsForDashboard.length
+          ? selectedSubjectsForDashboard
+          : safeMainSubjects(3);
 
         const oldRows = subjectPanel.querySelectorAll(".subject-progress-row");
         oldRows.forEach(function (row) {
@@ -699,7 +708,7 @@ loadTasks();
           const percent = safeSubjectPercent(subject);
 
           const row = document.createElement("div");
-          row.className = "subject-progress-row";
+          row.className = "subject-progress-row selected-dashboard-row";
           row.innerHTML =
             "<div><b>" + subject + "</b><p>" + percent + "%</p></div>" +
             '<div class="mini-progress"><span style="width:' + percent + '%"></span></div>';
