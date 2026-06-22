@@ -922,3 +922,54 @@ input {
   margin-top: 6px;
   line-height: 1.35;
 }
+
+/* ===== selected subjects FIX v2 styles ===== */
+
+.subject-panel {
+  overflow: visible !important;
+}
+
+.subject-panel .subject-progress-row {
+  grid-template-columns: minmax(180px, 260px) minmax(160px, 1fr);
+}
+
+.selected-dashboard-row {
+  padding: 15px 0 !important;
+}
+
+.selected-dashboard-row b {
+  line-height: 1.25;
+}
+
+.selected-dashboard-row p {
+  margin-top: 7px !important;
+  line-height: 1.35;
+}
+
+.selected-empty-state {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+}
+
+.selected-empty-state p {
+  margin-top: 8px;
+}
+
+.subject-check {
+  cursor: pointer;
+}
+
+.subject-check:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.15);
+}
+
+@media(max-width: 900px) {
+  .subject-panel .subject-progress-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
